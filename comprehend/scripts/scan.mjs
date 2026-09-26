@@ -66,13 +66,43 @@ export async function scan(cwd, cfg) {
   };
 }
 
+/**
+ * Turns whatever the user typed — a module id, or a file/folder path they
+ * are looking at right now — into a module id. A path is more natural to
+ * hand over than an arbitrary id you have to remember, and scan() already
+ * knows which files belong to which module.
+ */
+export function resolveModule(result, arg) {
+  const byId = result.modules.find((m) => m.id === arg);
+  if (byId) return { moduleId: byId.id };
+
+  const normalized = arg.replace(/^\.\//, '').replace(/\/+$/, '');
+  const candidates = new Set();
+  for (const module of result.modules) {
+    const hit = module.files?.some((f) => f === normalized || f.startsWith(`${normalized}/`));
+    if (hit) candidates.add(module.id);
+  }
+  if (candidates.size === 0) {
+    return { moduleId: null, error: `"${arg}" is not a module id and no module contains that path` };
+  }
+  if (candidates.size > 1) {
+    return { moduleId: null, candidates: [...candidates], error: `"${arg}" spans multiple modules: ${[...candidates].join(', ')}` };
+  }
+  return { moduleId: [...candidates][0] };
+}
+
 const isMain = process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href;
 if (isMain) {
   const { values } = parseArgs({ options: {
     repo: { type: 'string', default: process.cwd() },
     files: { type: 'boolean', default: false },
+    resolve: { type: 'string' },
   } });
   const result = await scan(values.repo);
-  if (!values.files) for (const m of result.modules) delete m.files;
-  process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+  if (values.resolve) {
+    process.stdout.write(JSON.stringify(resolveModule(result, values.resolve), null, 2) + '\n');
+  } else {
+    if (!values.files) for (const m of result.modules) delete m.files;
+    process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+  }
 }

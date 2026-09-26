@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createRepo } from './helpers/fixture.mjs';
-import { structure } from '../skill/scripts/structure.mjs';
+import { structure } from '../comprehend/scripts/structure.mjs';
 
 const dir = (result, path) => result.directories.find((d) => d.path === path);
 
