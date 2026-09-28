@@ -43,6 +43,8 @@ ln -s "$PWD/comprehend" ~/.claude/skills/comprehend
 /comprehend <file or folder path>   # 指定模組，直接給路徑也行，不用背 id
 ```
 
+完整操作說明（安裝、`init` 流程、地圖怎麼看、疑難排解）見 [docs/GUIDE.md](docs/GUIDE.md)。
+
 ## 現況
 
 已經跑通全流程：探測、計分、skill、本地地圖、發布與徽章。還沒驗證過的：真實的 GitHub remote，以及長期連續出題下的題目品質。

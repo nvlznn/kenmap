@@ -4,12 +4,34 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { promisify } from 'node:util';
+import { pathToFileURL } from 'node:url';
 import * as git from './lib/git.mjs';
 import { ensure } from './lib/worktree.mjs';
 import { writeReport } from './report.mjs';
+import { isMainModule } from './lib/cli.mjs';
 
 const exec = promisify(execFile);
 const TEMPLATE = path.resolve(import.meta.dirname, '../../web/index.html');
+
+/**
+ * Best-effort only: if the OS has no default browser, or the desktop is
+ * headless (SSH, CI), or a tab is already open on this exact file and the
+ * window manager just focuses it instead of visibly changing anything, the
+ * user is left staring at nothing with no idea whether it worked. The caller
+ * must not treat a false return as fatal — it should fall back to printing
+ * the URL instead.
+ */
+export async function openInBrowser(filePath) {
+  const opener = process.platform === 'darwin' ? 'open'
+    : process.platform === 'win32' ? 'start'
+    : 'xdg-open';
+  try {
+    await exec(opener, [filePath]);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Local mode: the page is the same one the site serves, with the report baked
@@ -34,19 +56,26 @@ export async function render(cwd, { open = true, report } = {}) {
   const out = path.join(await ensure(repoRoot), 'local.html');
   await fs.writeFile(out, injected, 'utf8');
 
-  if (open) {
-    const opener = process.platform === 'darwin' ? 'open' : 'xdg-open';
-    await exec(opener, [out]).catch(() => {});
-  }
+  if (open) await openInBrowser(out);
   return out;
 }
 
-const isMain = process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href;
-if (isMain) {
+if (isMainModule(import.meta.url)) {
   const { values } = parseArgs({ options: {
     repo: { type: 'string', default: process.cwd() },
     'no-open': { type: 'boolean', default: false },
   } });
-  const out = await render(values.repo, { open: !values['no-open'] });
-  process.stdout.write(out + '\n');
+  // The render() function's own auto-open is best-effort and silent by
+  // design (it's also called from the quiz flow, where a failed open
+  // shouldn't interrupt anything). The CLI is where a human is actually
+  // looking at the output, so it opens explicitly here and always prints a
+  // clickable link — a bare filesystem path isn't reliably clickable in a
+  // terminal, but a file:// URL is.
+  const out = await render(values.repo, { open: false });
+  const url = pathToFileURL(out).href;
+  const opened = values['no-open'] ? false : await openInBrowser(out);
+
+  if (opened) process.stdout.write('Opened the map in your browser. If nothing showed up, use this link:\n');
+  else if (!values['no-open']) process.stdout.write("Couldn't open a browser automatically — open this link:\n");
+  process.stdout.write(url + '\n');
 }

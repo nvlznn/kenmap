@@ -3,6 +3,7 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import * as config from './lib/config.mjs';
 import { describe } from './structure.mjs';
+import { isMainModule } from './lib/cli.mjs';
 
 /**
  * Maps the discovered files onto the module boundaries frozen in .kenmap.json.
@@ -91,8 +92,7 @@ export function resolveModule(result, arg) {
   return { moduleId: [...candidates][0] };
 }
 
-const isMain = process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href;
-if (isMain) {
+if (isMainModule(import.meta.url)) {
   const { values } = parseArgs({ options: {
     repo: { type: 'string', default: process.cwd() },
     files: { type: 'boolean', default: false },

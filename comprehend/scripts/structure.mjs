@@ -5,6 +5,7 @@ import { DATA_DIR } from './lib/config.mjs';
 import { fileEdges, findPackages, languagesUsed } from './lib/edges.mjs';
 import { countLines, extensionOf, isBinary, looksGenerated } from './lib/files.mjs';
 import * as git from './lib/git.mjs';
+import { isMainModule } from './lib/cli.mjs';
 
 /** `pattern linguist-generated` entries in .gitattributes, treated as authoritative. */
 function parseGitattributes(text) {
@@ -130,8 +131,7 @@ export async function structure(cwd) {
   };
 }
 
-const isMain = process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href;
-if (isMain) {
+if (isMainModule(import.meta.url)) {
   const { values } = parseArgs({ options: { repo: { type: 'string', default: process.cwd() } } });
   const result = await structure(values.repo);
   process.stdout.write(JSON.stringify(result, null, 2) + '\n');

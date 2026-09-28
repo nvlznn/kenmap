@@ -6,6 +6,7 @@ import { RESULTS_FILE, SCORE_STEPS } from './lib/config.mjs';
 import * as config from './lib/config.mjs';
 import * as git from './lib/git.mjs';
 import { ensure } from './lib/worktree.mjs';
+import { isMainModule } from './lib/cli.mjs';
 
 /** One quiz is one question is one record. */
 export async function record(cwd, entry, { now = new Date() } = {}) {
@@ -46,8 +47,7 @@ export async function readResults(dir) {
   }
 }
 
-const isMain = process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href;
-if (isMain) {
+if (isMainModule(import.meta.url)) {
   const { values } = parseArgs({ options: {
     repo: { type: 'string', default: process.cwd() },
     module: { type: 'string' },
