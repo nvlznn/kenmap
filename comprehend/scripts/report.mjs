@@ -8,6 +8,7 @@ import * as git from './lib/git.mjs';
 import { ensure } from './lib/worktree.mjs';
 import { readResults } from './record.mjs';
 import { scan } from './scan.mjs';
+import { isMainModule } from './lib/cli.mjs';
 
 /** Module line counts at an arbitrary commit, reading only the blobs we need. */
 async function locAtCommit(repoRoot, commit, modules) {
@@ -165,8 +166,7 @@ export async function writeReport(repoRoot, options) {
   return result;
 }
 
-const isMain = process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href;
-if (isMain) {
+if (isMainModule(import.meta.url)) {
   const { values } = parseArgs({ options: { repo: { type: 'string', default: process.cwd() } } });
   const repoRoot = await git.repoRoot(values.repo);
   const result = await writeReport(repoRoot);

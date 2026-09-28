@@ -3,6 +3,7 @@ import { parseArgs } from 'node:util';
 import { DATA_BRANCH } from './lib/config.mjs';
 import * as git from './lib/git.mjs';
 import { ensure, isIgnored } from './lib/worktree.mjs';
+import { isMainModule } from './lib/cli.mjs';
 
 /** Pushes the data branch. Never force: these results are the only record. */
 export async function publish(cwd, { branch = DATA_BRANCH, push = true } = {}) {
@@ -30,8 +31,7 @@ export async function publish(cwd, { branch = DATA_BRANCH, push = true } = {}) {
   return { pushed: true, branch, ignored: await isIgnored(repoRoot) };
 }
 
-const isMain = process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href;
-if (isMain) {
+if (isMainModule(import.meta.url)) {
   const { values } = parseArgs({ options: {
     repo: { type: 'string', default: process.cwd() },
     'no-push': { type: 'boolean', default: false },

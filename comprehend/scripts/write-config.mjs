@@ -3,6 +3,7 @@ import { parseArgs } from 'node:util';
 import * as config from './lib/config.mjs';
 import * as git from './lib/git.mjs';
 import { scan } from './scan.mjs';
+import { isMainModule } from './lib/cli.mjs';
 
 /**
  * The init conversation proposes module boundaries; this is what actually
@@ -24,8 +25,7 @@ export async function writeConfig(cwd, proposed) {
   return { file, modules: result.modules.map(({ files, ...m }) => m), unassigned: result.unassigned };
 }
 
-const isMain = process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href;
-if (isMain) {
+if (isMainModule(import.meta.url)) {
   const { values } = parseArgs({ options: {
     repo: { type: 'string', default: process.cwd() },
     json: { type: 'string' },

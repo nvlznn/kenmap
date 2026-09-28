@@ -16,7 +16,8 @@ goes in, and a hand-edited score is not evidence of anything.
 ## Usage
 
 - `/comprehend` — quiz the lowest-scoring module
-- `/comprehend <module>` — quiz a specific module
+- `/comprehend <module-or-path>` — quiz a specific module, named either by its
+  id or by a file/folder path inside it (e.g. the file the user has open)
 - `/comprehend init` — set up or revise module boundaries
 
 If `.kenmap.json` does not exist, run the init flow first, whatever was asked.
@@ -55,9 +56,12 @@ orphans its recorded answers.
 
 ## Quiz flow
 
-1. **Pick the module.** Given an argument, use it. Otherwise run
-   `node scripts/report.mjs` and take the lowest-scoring module, preferring one
-   that has never been quizzed.
+1. **Pick the module.** Given an argument, resolve it with
+   `node scripts/scan.mjs --resolve "<argument>"` — it accepts a module id or a
+   file/folder path and returns `{ moduleId }`. If it returns `candidates`
+   instead (the path spans more than one module), ask the user which one they
+   meant. With no argument, run `node scripts/report.mjs` and take the
+   lowest-scoring module, preferring one that has never been quizzed.
 2. **Check the working tree.** If `git status --porcelain` is not empty, say so:
    the score binds to the current commit, so uncommitted work is not covered.
    Ask whether to continue. Do not refuse.

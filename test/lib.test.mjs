@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createRepo } from './helpers/fixture.mjs';
-import * as git from '../skill/scripts/lib/git.mjs';
+import * as git from '../comprehend/scripts/lib/git.mjs';
 
 test('listTree drops submodules and symlinks, keeps real files', async (t) => {
   const inner = await createRepo('inner');

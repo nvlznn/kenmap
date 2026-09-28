@@ -6,12 +6,12 @@ import path from 'node:path';
 import test from 'node:test';
 import { promisify } from 'node:util';
 import { createRepo } from './helpers/fixture.mjs';
-import { badge, report } from '../skill/scripts/report.mjs';
-import { publish } from '../skill/scripts/publish.mjs';
-import { record } from '../skill/scripts/record.mjs';
-import { render } from '../skill/scripts/render.mjs';
-import { structure } from '../skill/scripts/structure.mjs';
-import { writeConfig } from '../skill/scripts/write-config.mjs';
+import { badge, report } from '../comprehend/scripts/report.mjs';
+import { publish } from '../comprehend/scripts/publish.mjs';
+import { record } from '../comprehend/scripts/record.mjs';
+import { render } from '../comprehend/scripts/render.mjs';
+import { structure } from '../comprehend/scripts/structure.mjs';
+import { writeConfig } from '../comprehend/scripts/write-config.mjs';
 
 const exec = promisify(execFile);
 const body = (n, tag) => Array.from({ length: n }, (_, i) => `// ${tag} ${i}`).join('\n') + '\n';

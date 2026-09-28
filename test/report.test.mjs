@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createRepo } from './helpers/fixture.mjs';
-import { badge, report } from '../skill/scripts/report.mjs';
-import { record as writeRecord } from '../skill/scripts/record.mjs';
+import { badge, report } from '../comprehend/scripts/report.mjs';
+import { record as writeRecord } from '../comprehend/scripts/record.mjs';
 
 // Fixture commits run on a pinned clock; answers must share it or the
 // timestamp fallback compares against the wrong era.
