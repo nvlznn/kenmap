@@ -23,7 +23,7 @@ export async function ensure(repoRoot, { dir = DATA_DIR, branch = DATA_BRANCH } 
   return full;
 }
 
-async function pathExists(p) {
+export async function pathExists(p) {
   try {
     await fs.access(p);
     return true;
@@ -32,7 +32,7 @@ async function pathExists(p) {
   }
 }
 
-async function localBranchExists(repoRoot, branch) {
+export async function localBranchExists(repoRoot, branch) {
   try {
     await git.raw(repoRoot, ['rev-parse', '--verify', '--quiet', `refs/heads/${branch}`]);
     return true;
@@ -41,7 +41,7 @@ async function localBranchExists(repoRoot, branch) {
   }
 }
 
-async function remoteBranchExists(repoRoot, branch) {
+export async function remoteBranchExists(repoRoot, branch) {
   try {
     const out = await git.raw(repoRoot, ['ls-remote', '--heads', 'origin', branch]);
     return out.trim().length > 0;

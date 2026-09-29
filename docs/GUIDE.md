@@ -13,9 +13,10 @@
 5. [看懂地圖頁面](#5-看懂地圖頁面)
 6. [分數是怎麼算出來的](#6-分數是怎麼算出來的)
 7. [發布與 README 徽章](#7-發布與-readme-徽章)
-8. [不透過 skill，直接下指令](#8-不透過-skill直接下指令)
-9. [疑難排解](#9-疑難排解)
-10. [目前的已知限制](#10-目前的已知限制)
+8. [清除 KenMap 的所有資料：`/comprehend reset`](#8-清除-kenmap-的所有資料comprehend-reset)
+9. [不透過 skill，直接下指令](#9-不透過-skill直接下指令)
+10. [疑難排解](#10-疑難排解)
+11. [目前的已知限制](#11-目前的已知限制)
 
 ---
 
@@ -221,7 +222,41 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
 
 ---
 
-## 8. 不透過 skill，直接下指令
+## 8. 清除 KenMap 的所有資料：`/comprehend reset`
+
+想在某個 repo 完全重新來過（例如模組邊界談得不理想，想整個重談），打：
+
+```
+/comprehend reset
+```
+
+### 會發生的事
+
+1. **KenMap 先只回報現況，什麼都不會刪。** 它會檢查這個 repo 裡有沒有
+   `.kenmap.json`、本機的 `.kenmap-data/` 工作目錄、本機的 `kenmap-data`
+   分支、以及 `origin` 上有沒有推過的 `kenmap-data` 分支。
+2. **KenMap 會把找到的東西分成兩種風險等級講給你聽：**
+   - **本機的**（設定檔、工作目錄、本機分支）——之後跑 `/comprehend init`
+     加上重新考幾題就能完全復原，刪掉沒什麼好擔心的。
+   - **已經推上 `origin` 的分支**——這代表你的測驗紀錄已經在真實的 GitHub
+     repo 上，**其他有權限看這個 repo 的人也看得到**。這不是靠本機操作
+     就能復原的東西。
+3. **這兩件事會分開問你**，你可以只清本機、只清遠端、或兩個都清——**KenMap
+   不會因為你答應清本機，就順便把遠端也刪掉**，這兩個永遠是兩個獨立的
+   決定。
+4. 清完之後，這個 repo 對 KenMap 來說就像從沒被測量過。想重新開始，跑
+   `/comprehend init` 就好。
+
+### 各自實際刪了什麼
+
+| 你答應清除的範圍 | 實際動作 |
+|---|---|
+| 本機 | 刪除 `.kenmap.json`；移除 `.kenmap-data/` 這個 git worktree；刪除本機的 `kenmap-data` 分支（如果已經有 commit 過的話——只考過題、從沒 publish 過的話，這個分支其實還沒有任何 commit，所以這步常常沒有東西可刪，但工作目錄裡的測驗紀錄一樣會被清掉） |
+| 遠端 | 對 `origin` 執行 `git push origin --delete kenmap-data` |
+
+---
+
+## 9. 不透過 skill，直接下指令
 
 平常用 `/comprehend` 就夠了，以下是給想手動操作、或想確認某個環節有沒有正確執行的人看的。所有指令都要先 `cd` 到你要測量的那個 repo 底下再執行。
 
@@ -235,10 +270,13 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
 | `node ~/.claude/skills/comprehend/scripts/report.mjs` | 重新計算所有模組的分數，同時更新 `report.json` 和 `badge.json` |
 | `node ~/.claude/skills/comprehend/scripts/render.mjs` | 用最新分數重新產生地圖頁面並打開瀏覽器；加 `--no-open` 只產生檔案不開瀏覽器 |
 | `node ~/.claude/skills/comprehend/scripts/publish.mjs` | 推送到 `kenmap-data` 分支；加 `--no-push` 只在本機 commit、不真的推送 |
+| `node ~/.claude/skills/comprehend/scripts/reset.mjs` | 只回報現況，不刪任何東西 |
+| `node ~/.claude/skills/comprehend/scripts/reset.mjs --local` | 清掉 `.kenmap.json`、本機工作目錄、本機分支 |
+| `node ~/.claude/skills/comprehend/scripts/reset.mjs --remote` | 刪掉 `origin` 上的 `kenmap-data` 分支 |
 
 ---
 
-## 9. 疑難排解
+## 10. 疑難排解
 
 **打完 `/comprehend init`，模組建議看起來很奇怪。** 直接用對話跟它說哪裡不對——它是根據探測結果做判斷，不是固定規則，可以隨時調整。
 
@@ -258,7 +296,7 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
 
 ---
 
-## 10. 目前的已知限制
+## 11. 目前的已知限制
 
 - **只支援 Dart 的 import 連線。** 其他語言一樣能正常算分、正常使用，只是地圖上不會畫連線。
 - **改模組 id 會讓舊紀錄失聯。** 想重新命名模組，紀錄不會自動搬過去。
