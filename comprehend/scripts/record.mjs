@@ -9,7 +9,8 @@ import { ensure } from './lib/worktree.mjs';
 import { isMainModule } from './lib/cli.mjs';
 import { pathToFileURL } from 'node:url';
 import { openInBrowser, render } from './render.mjs';
-import { writeReport } from './report.mjs';
+import { report, writeReport } from './report.mjs';
+import { describe } from './structure.mjs';
 
 /** One quiz is one question is one record. */
 export async function record(cwd, entry, { now = new Date() } = {}) {
@@ -53,20 +54,28 @@ if (isMainModule(import.meta.url)) {
     render: { type: 'boolean', default: false },
     'no-open': { type: 'boolean', default: false },
   } });
-  const result = await record(values.repo, { ...values, score: Number(values.score) });
+  const entry = { ...values, score: Number(values.score) };
   if (!values.render) {
+    const result = await record(values.repo, entry);
     process.stdout.write(JSON.stringify(result.entry, null, 2) + '\n');
   } else {
     // One call instead of record → report → render: every extra tool call is
-    // a round trip the user sits through.
+    // a round trip the user sits through. Scoring before and after costs
+    // milliseconds here and lets the reply show what the answer changed.
     const repoRoot = await git.repoRoot(values.repo);
-    const report = await writeReport(repoRoot);
-    const page = await render(repoRoot, { open: false, report });
-    const module = report.modules.find((m) => m.id === values.module);
+    const described = await describe(repoRoot);
+    const before = await report(repoRoot, { described });
+    await record(repoRoot, entry);
+    const after = await writeReport(repoRoot, { described });
+    const page = await render(repoRoot, { open: false, report: after });
+    const was = before.modules.find((m) => m.id === values.module);
+    const now = after.modules.find((m) => m.id === values.module);
     process.stdout.write(JSON.stringify({
       module: values.module,
-      moduleScore: module?.score ?? null,
-      total: report.total,
+      moduleBefore: was?.quizzed ? was.score : null,
+      moduleAfter: now?.score ?? null,
+      totalBefore: before.anyQuizzed ? before.total : null,
+      totalAfter: after.total,
       map: pathToFileURL(page).href,
       opened: values['no-open'] ? false : await openInBrowser(page),
     }, null, 2) + '\n');

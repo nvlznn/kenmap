@@ -10,6 +10,7 @@ description: Quiz yourself on one module of this repo and record how well you st
 ## 回覆規則（每一則都適用）
 
 - **只用繁體中文回覆。** 識別字、路徑、指令保持原樣。
+- **使用者體驗第一。** 多個項目共用同一組欄位的，一律用表格；其餘用最短的句子。分數一律寫成百分比（0.75 → 75%），行數加千分位。路徑有共同前綴時，前綴在表格上方寫一次，表格裡只寫剩下的部分；`xxx/**` 寫成 `xxx/`。**數字只照抄 script 的輸出，不要自己算。**
 - **越短越好。** 不寒暄、不說明你正在做什麼、不重述使用者的話、不列步驟、不加總結。只輸出下面各流程規定的內容。
 - **能少做就少做。** 每個流程只跑規定的指令，不額外讀檔、不額外檢查。使用者每多等一次工具呼叫，就多等一輪。
 - script 都在這個檔案旁的 `scripts/`，在目標 repo 根目錄用 `node` 執行。**絕不手寫** `.kenmap.json` 或 `results.jsonl`。
@@ -38,14 +39,19 @@ description: Quiz yourself on one module of this repo and record how well you st
    node scripts/record.mjs --module <id> --score <0|0.25|0.5|0.75|1> \
      --question "<題目>" --answer "<使用者的回答>" --rationale "<一句評分理由>" --render
    ```
-   它會記錄、重算分數、產生地圖並嘗試打開，回傳 `moduleScore`、`total`、`map`、`opened`。
-4. 回覆格式（最多三行）：
+   它會記錄、重算分數、產生地圖並嘗試打開，回傳作答前後的分數（`moduleBefore`、`moduleAfter`、`totalBefore`、`totalAfter`）、`map`、`opened`。
+4. 回覆格式：
    ```
-   **<分數>** · <一兩句：答對了什麼、漏了什麼>
-   <模組 id> 現在 <moduleScore×100>%，總分 <total×100>%
+   **<這題分數>** · <一兩句：答對了什麼、漏了什麼>
+
+   | | 之前 | 現在 |
+   |---|---:|---:|
+   | `<模組 id>` | <moduleBefore> | <moduleAfter> |
+   | 總分 | <totalBefore> | <totalAfter> |
+
    要發布到 GitHub 就說「發布」。
    ```
-   `opened` 是 `false` 時，第二行後面加上「地圖：<map>」。
+   `null` 的欄位寫「未考過」。`opened` 是 `false` 時，表格下面加一行「地圖：<map>」。
 5. 使用者說「發布」→ `node scripts/publish.mjs`，回一句結果。
 
 ### 什麼題目值得問
@@ -74,24 +80,40 @@ description: Quiz yourself on one module of this repo and record how well you st
 ## init
 
 1. 執行 `node scripts/structure.mjs --compact`。
-2. 一則回覆提出模組切法，**依這個 repo 的實際樣子**，不設模組數量目標：有套件邊界就照套件切；目錄有意義就切在那一層；檔案全平攤就用 import 集中度找分界；以產生碼為主的目錄不納入，但要講出來。格式：
+2. 依**這個 repo 的實際樣子**擬模組切法，不設模組數量目標：有套件邊界就照套件切；目錄有意義就切在那一層；檔案全平攤就用 import 集中度找分界；以產生碼為主的目錄不納入，但要列出來。
+3. 執行 `node scripts/write-config.mjs --dry-run --json '<設定>'` 取得每個模組確切的行數、檔案數，以及納入（`covered`）與不納入（`unassigned.loc`）的行數。這一步不寫檔。
+4. 一則回覆：
    ```
-   - `<id>`：`<glob>`、`<glob>` — <一句理由>
-   不納入：`<路徑>`（<原因>）
-   這樣切可以嗎？
-   ```
-3. 使用者要調整就照改，只回改過的版本。
-4. 確認後執行 `node scripts/write-config.mjs --json '{"version":1,"user":"<GitHub 帳號>","modules":{"<id>":["<glob>"]}}'`（glob 相對 repo 根目錄；有模組配不到檔案它會拒絕）。
-5. 問一句：「要把 `.kenmap.json` commit，並把 `.kenmap-data/` 加進 `.gitignore` 嗎？」這兩件都會動到 main 分支，要使用者答應才做。
+   路徑都在 `<共同前綴>` 底下。
 
-**重跑 init**：不要直接覆蓋。列出現有模組，問要保留、調整還是重來，並提醒改掉模組 id 會讓那個模組的舊紀錄失聯。
+   | 模組 | 包含 | 行數 | 檔案 | 為什麼這樣切 |
+   |---|---|---:|---:|---|
+   | `<id>` | `<路徑>`、`<路徑>` | <loc> | <fileCount> | <十五字內> |
+
+   | 不納入 | 原因 |
+   |---|---|
+   | `<路徑>` | <原因> |
+
+   納入 <covered> 行，不納入 <unassigned.loc> 行。這樣切可以嗎？
+   ```
+5. 使用者要調整就改，重跑第 3 步，回覆更新後的完整表格。
+6. 確認後執行 `node scripts/write-config.mjs --json '<設定>'`。設定格式 `{"version":1,"user":"<GitHub 帳號>","modules":{"<id>":["<glob>"]}}`，glob 相對 repo 根目錄；有模組配不到檔案它會拒絕。
+7. 問一句：「要把 `.kenmap.json` commit，並把 `.kenmap-data/` 加進 `.gitignore` 嗎？」這兩件都會動到 main 分支，要使用者答應才做。
+
+**重跑 init**：不要直接覆蓋。執行 `node scripts/scan.mjs`，用 `| 模組 | 包含 | 行數 | 檔案 |` 表格列出現有模組，問要保留、調整還是重來，並提醒改掉模組 id 會讓那個模組的舊紀錄失聯。
 
 ## reset
 
 1. 執行 `node scripts/reset.mjs`（只回報現況，不刪任何東西）。全部都不存在就回「這個 repo 沒有 KenMap 的資料。」停。
-2. 一則回覆列出找到的東西，並**分開**問：
-   - 「清除本機資料嗎？（設定檔、工作目錄、本機分支，之後可以重建）」
-   - 只有 `remoteBranch` 為 true 時才問：「也刪除 GitHub 上的 `kenmap-data` 分支嗎？（其他人看得到，刪了難復原）」
+2. 一則回覆，只列出存在的項目：
+   ```
+   | 項目 | 位置 | 刪除之後 |
+   |---|---|---|
+   | 模組設定 | `.kenmap.json` | 重跑 init 就會重建 |
+   | 本機作答紀錄與地圖 | `.kenmap-data/` | 作答紀錄一起刪除、無法復原（已發布到 GitHub 的不受影響） |
+   | GitHub 上的作答紀錄 | `origin` 的 `kenmap-data` 分支 | 其他人看得到，刪了難復原 |
+   ```
+   接著**分開**問：「清除本機資料嗎？」；只有 `remoteBranch` 為 true 時再問：「也刪除 GitHub 上的紀錄嗎？」
 3. 只執行使用者答應的：`--local`、`--remote`，或兩個都加。**絕不因為使用者答應清本機，就順便加 `--remote`。**
 4. 依輸出的 `removed` 回一句實際刪了什麼。
 

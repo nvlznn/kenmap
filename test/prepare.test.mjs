@@ -105,7 +105,20 @@ test('record --render records, rescores and redraws in one call', async (t) => {
     '--question', 'why?', '--answer', 'because', '--render', '--no-open']);
   const out = JSON.parse(stdout);
   assert.equal(out.module, 'ui');
-  assert.equal(out.moduleScore, 0.75);
+  assert.equal(out.moduleBefore, null, 'never quizzed before');
+  assert.equal(out.moduleAfter, 0.75);
+  assert.equal(out.totalBefore, null);
+  assert.ok(out.totalAfter > 0);
   assert.match(out.map, /^file:\/\/.*local\.html$/);
   assert.equal(out.opened, false);
+});
+
+test('a second answer reports the score it replaced', async (t) => {
+  const repo = await setup(t);
+  await answer(repo, 'ui', 0.25);
+  const { stdout } = await exec('node', [RECORD, '--repo', repo.path, '--module', 'ui', '--score', '1',
+    '--question', 'why?', '--answer', 'because', '--render', '--no-open']);
+  const out = JSON.parse(stdout);
+  assert.equal(out.moduleBefore, 0.25);
+  assert.equal(out.moduleAfter, 0.625);
 });
