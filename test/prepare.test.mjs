@@ -61,18 +61,27 @@ test('the line budget is respected, cutting the first file rather than showing n
   assert.equal(result.files[0].text.split('\n').length, 25);
 });
 
-test('with no target, the largest never-quizzed module is picked without scoring anything', async (t) => {
+const scoreModule = async (repo, module, score) => {
+  for (let i = 0; i < 3; i++) await answer(repo, module, score);
+};
+
+test('with no target, a module part way to its first score is finished first', async (t) => {
   const repo = await setup(t);
-  await answer(repo, 'data', 1);
-  const result = await prepare(repo.path);
-  assert.equal(result.module.id, 'ui');
+  await answer(repo, 'tiny', 1);
+  assert.equal((await prepare(repo.path)).module.id, 'tiny', 'tiny is smaller, but it was already started');
 });
 
-test('once every module has an answer, the lowest score is picked', async (t) => {
+test('with nothing started, the largest never-quizzed module is picked without scoring anything', async (t) => {
   const repo = await setup(t);
-  await answer(repo, 'ui', 1);
-  await answer(repo, 'data', 0.25);
-  await answer(repo, 'tiny', 0.75);
+  await scoreModule(repo, 'data', 1);
+  assert.equal((await prepare(repo.path)).module.id, 'ui');
+});
+
+test('once every module has a score, the lowest one is picked', async (t) => {
+  const repo = await setup(t);
+  await scoreModule(repo, 'ui', 1);
+  await scoreModule(repo, 'data', 0.25);
+  await scoreModule(repo, 'tiny', 0.75);
   assert.equal((await prepare(repo.path)).module.id, 'data');
 });
 
@@ -87,7 +96,7 @@ test('earlier questions for the module are handed back so they are not repeated'
   const repo = await setup(t);
   await answer(repo, 'ui', 0.5, 'What breaks if home stops going through the repository?');
   const result = await prepare(repo.path, { target: 'ui' });
-  assert.deepEqual(result.previous, ['What breaks if home stops going through the repository?']);
+  assert.deepEqual(result.previous, [{ type: 'why', question: 'What breaks if home stops going through the repository?' }]);
   assert.match(format(result), /之前問過/);
 });
 
@@ -106,19 +115,74 @@ test('record --render records, rescores and redraws in one call', async (t) => {
   const out = JSON.parse(stdout);
   assert.equal(out.module, 'ui');
   assert.equal(out.moduleBefore, null, 'never quizzed before');
-  assert.equal(out.moduleAfter, 0.75);
+  assert.equal(out.moduleAfter, null, 'one answer is not a score yet');
+  assert.equal(out.answers, 1);
+  assert.equal(out.required, 3);
   assert.equal(out.totalBefore, null);
-  assert.ok(out.totalAfter > 0);
+  assert.equal(out.totalAfter, null);
   assert.match(out.map, /^file:\/\/.*local\.html$/);
   assert.equal(out.opened, false);
 });
 
-test('a second answer reports the score it replaced', async (t) => {
+const renderAnswer = async (repo, score) => JSON.parse((await exec('node', [RECORD, '--repo', repo.path,
+  '--module', 'ui', '--score', String(score), '--question', 'why?', '--answer', 'because', '--render', '--no-open'])).stdout);
+
+test('the third answer is the one that gives the module its first score', async (t) => {
   const repo = await setup(t);
-  await answer(repo, 'ui', 0.25);
-  const { stdout } = await exec('node', [RECORD, '--repo', repo.path, '--module', 'ui', '--score', '1',
-    '--question', 'why?', '--answer', 'because', '--render', '--no-open']);
-  const out = JSON.parse(stdout);
+  await answer(repo, 'ui', 0.5);
+  await answer(repo, 'ui', 0.5);
+  const out = await renderAnswer(repo, 1);
+  assert.equal(out.moduleBefore, null);
+  assert.equal(out.moduleAfter, 0.667);
+  assert.equal(out.answers, 3);
+  assert.ok(out.totalAfter > 0);
+});
+
+test('an answer on a scored module reports the score it replaced', async (t) => {
+  const repo = await setup(t);
+  await scoreModule(repo, 'ui', 0.25);
+  const out = await renderAnswer(repo, 1);
   assert.equal(out.moduleBefore, 0.25);
-  assert.equal(out.moduleAfter, 0.625);
+  assert.equal(out.moduleAfter, 0.5);
+});
+
+test('a module never asked about opens with a trade-off question', async (t) => {
+  const repo = await setup(t);
+  const result = await prepare(repo.path, { target: 'ui' });
+  assert.equal(result.type.id, 'tradeoff');
+  assert.match(format(result), /這次題型：取捨與技術債/);
+});
+
+test('question types rotate so every type comes up before any repeats', async (t) => {
+  const repo = await setup(t);
+  const seen = [];
+  for (let i = 0; i < 5; i++) {
+    const { type } = await prepare(repo.path, { target: 'ui' });
+    seen.push(type.id);
+    repo.clock += 60 * 1000;
+    await record(repo.path, { module: 'ui', score: 1, type: type.id, question: `q${i}` }, { now: new Date(repo.clock) });
+  }
+  assert.deepEqual([...new Set(seen)].sort(), ['alternative', 'reading', 'scenario', 'tradeoff', 'why']);
+  assert.equal((await prepare(repo.path, { target: 'ui' })).type.id, 'tradeoff', 'the cycle starts over');
+});
+
+test('answers recorded before types existed count as the original "why" type', async (t) => {
+  const repo = await setup(t);
+  await answer(repo, 'ui', 1); // no type passed
+  const types = [];
+  for (let i = 0; i < 4; i++) {
+    const { type } = await prepare(repo.path, { target: 'ui' });
+    types.push(type.id);
+    repo.clock += 60 * 1000;
+    await record(repo.path, { module: 'ui', score: 1, type: type.id, question: `q${i}` }, { now: new Date(repo.clock) });
+  }
+  assert.ok(!types.includes('why'), 'why was already covered by the untyped answer');
+});
+
+test('an unknown question type is refused', async (t) => {
+  const repo = await setup(t);
+  await assert.rejects(
+    () => record(repo.path, { module: 'ui', score: 1, type: 'trivia', question: 'q' }),
+    /unknown question type "trivia"/,
+  );
 });

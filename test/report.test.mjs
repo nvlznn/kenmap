@@ -31,17 +31,22 @@ async function setup(t, { files, modules = MODULES } = {}) {
 
 const answer = (module, score) => ({ module, score, question: `why is ${module} like this?`, answer: 'because' });
 
+// A module only gets a score once it has three answers.
+const scoreModule = async (repo, module, score) => {
+  for (let i = 0; i < 3; i++) await record(repo, answer(module, score));
+};
+
 test('a module nobody has been quizzed on scores zero', async (t) => {
   const repo = await setup(t, { files: { 'lib/ui/a.dart': lines(10), 'lib/data/b.dart': lines(10) } });
   const result = await report(repo.path);
   assert.deepEqual(result.modules.map((m) => m.score), [0, 0]);
   assert.equal(result.total, 0);
-  assert.equal(result.anyQuizzed, false);
+  assert.equal(result.anyScored, false);
 });
 
 test('untouched code keeps the full quiz score', async (t) => {
   const repo = await setup(t, { files: { 'lib/ui/a.dart': lines(10), 'lib/data/b.dart': lines(10) } });
-  await record(repo, answer('ui', 1));
+  await scoreModule(repo, 'ui', 1);
   const ui = (await report(repo.path)).modules.find((m) => m.id === 'ui');
   assert.equal(ui.score, 1);
   assert.equal(ui.breakdown[0].churn, 0);
@@ -49,7 +54,7 @@ test('untouched code keeps the full quiz score', async (t) => {
 
 test('a one-line edit is not counted twice', async (t) => {
   const repo = await setup(t, { files: { 'lib/ui/a.dart': lines(100), 'lib/data/b.dart': lines(10) } });
-  await record(repo, answer('ui', 1));
+  await scoreModule(repo, 'ui', 1);
 
   await repo.write({ 'lib/ui/a.dart': lines(100).replace('// line 0', '// edited') });
   await repo.commit('fix: tweak one line');
@@ -61,7 +66,7 @@ test('a one-line edit is not counted twice', async (t) => {
 
 test('deleting code is not mistaken for a rewrite', async (t) => {
   const repo = await setup(t, { files: { 'lib/ui/a.dart': lines(1000), 'lib/data/b.dart': lines(10) } });
-  await record(repo, answer('ui', 1));
+  await scoreModule(repo, 'ui', 1);
 
   await repo.write({ 'lib/ui/a.dart': lines(200) });
   await repo.commit('refactor: drop dead code');
@@ -74,7 +79,7 @@ test('deleting code is not mistaken for a rewrite', async (t) => {
 
 test('a rewrite drives the score down', async (t) => {
   const repo = await setup(t, { files: { 'lib/ui/a.dart': lines(100), 'lib/data/b.dart': lines(10) } });
-  await record(repo, answer('ui', 1));
+  await scoreModule(repo, 'ui', 1);
 
   await repo.write({ 'lib/ui/a.dart': lines(100, 'rewritten') });
   await repo.commit('refactor: rewrite ui');
@@ -86,8 +91,8 @@ test('a rewrite drives the score down', async (t) => {
 
 test('moving a file between modules does not spike churn on both sides', async (t) => {
   const repo = await setup(t, { files: { 'lib/ui/a.dart': lines(50), 'lib/data/b.dart': lines(50) } });
-  await record(repo, answer('ui', 1));
-  await record(repo, answer('data', 1));
+  await scoreModule(repo, 'ui', 1);
+  await scoreModule(repo, 'data', 1);
 
   await repo.move('lib/ui/a.dart', 'lib/data/a.dart');
   await repo.commit('refactor: move a into data');
@@ -108,19 +113,32 @@ test('a module score averages its three most recent answers', async (t) => {
   assert.equal(ui.score, 0.833);
 });
 
-test('fewer than three answers average what exists', async (t) => {
+test('a module has no score until its third answer, but each answer is still graded', async (t) => {
   const repo = await setup(t, { files: { 'lib/ui/a.dart': lines(10), 'lib/data/b.dart': lines(10) } });
   await record(repo, answer('ui', 1));
   await record(repo, answer('ui', 0.5));
 
-  const ui = (await report(repo.path)).modules.find((m) => m.id === 'ui');
+  let result = await report(repo.path);
+  let ui = result.modules.find((m) => m.id === 'ui');
+  assert.equal(ui.scored, false);
+  assert.equal(ui.score, 0, 'counts as zero until it has a score');
+  assert.equal(ui.answers, 2);
+  assert.deepEqual(ui.breakdown.map((b) => b.quizScore), [0.5, 1], 'both answers keep their own grade');
+  assert.equal(result.anyScored, false);
+  assert.equal(badge(result).message, 'no data');
+
+  await record(repo, answer('ui', 0.75));
+  result = await report(repo.path);
+  ui = result.modules.find((m) => m.id === 'ui');
+  assert.equal(ui.scored, true);
   assert.equal(ui.score, 0.75);
+  assert.equal(result.anyScored, true);
 });
 
 test('the repo total is weighted by lines, not by module count', async (t) => {
   const repo = await setup(t, { files: { 'lib/ui/a.dart': lines(900), 'lib/data/b.dart': lines(100) } });
-  await record(repo, answer('ui', 1));
-  await record(repo, answer('data', 0));
+  await scoreModule(repo, 'ui', 1);
+  await scoreModule(repo, 'data', 0);
 
   const result = await report(repo.path);
   assert.equal(result.total, 0.9);
@@ -130,7 +148,7 @@ test('binary files never poison the arithmetic', async (t) => {
   const repo = await setup(t, {
     files: { 'lib/ui/a.dart': lines(10), 'lib/ui/logo.png': Buffer.from([0x89, 0, 1, 2]), 'lib/data/b.dart': lines(10) },
   });
-  await record(repo, answer('ui', 1));
+  await scoreModule(repo, 'ui', 1);
 
   await repo.write({ 'lib/ui/logo.png': Buffer.from([0x89, 0, 9, 9, 9]) });
   await repo.commit('chore: swap logo');
@@ -142,7 +160,7 @@ test('binary files never poison the arithmetic', async (t) => {
 
 test('a squashed baseline is reported as unverifiable, not as zero', async (t) => {
   const repo = await setup(t, { files: { 'lib/ui/a.dart': lines(10), 'lib/data/b.dart': lines(10) } });
-  await record(repo, answer('ui', 1));
+  await scoreModule(repo, 'ui', 1);
   await repo.write({ 'lib/ui/a.dart': lines(12) });
   await repo.commit('feat: more');
   await repo.squashAll();
@@ -166,8 +184,8 @@ test('the badge says no data before the first quiz and a percentage after', asyn
   const repo = await setup(t, { files: { 'lib/ui/a.dart': lines(10), 'lib/data/b.dart': lines(10) } });
   assert.equal(badge(await report(repo.path)).message, 'no data');
 
-  await record(repo, answer('ui', 1));
-  await record(repo, answer('data', 1));
+  await scoreModule(repo, 'ui', 1);
+  await scoreModule(repo, 'data', 1);
   const after = badge(await report(repo.path));
   assert.equal(after.message, '100%');
   assert.equal(after.color, 'brightgreen');

@@ -2,7 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { BADGE_FILE, RECENT_RECORDS, REPORT_FILE } from './lib/config.mjs';
+import { BADGE_FILE, RECENT_RECORDS, REPORT_FILE, REQUIRED_ANSWERS } from './lib/config.mjs';
 import { countLines, isBinary } from './lib/files.mjs';
 import * as git from './lib/git.mjs';
 import { ensure } from './lib/worktree.mjs';
@@ -75,7 +75,7 @@ export async function report(repoRoot, { now = new Date(), described } = {}) {
   const baselines = new Map();
   const churnCache = new Map();
   const locCache = new Map();
-  const scored = [];
+  const rows = [];
   for (const module of modules) {
     // results.jsonl is append-only, so a later line wins a timestamp tie.
     const recent = byModule.get(module.id)
@@ -116,20 +116,22 @@ export async function report(repoRoot, { now = new Date(), described } = {}) {
       });
     }
 
-    const usable = breakdown.filter((b) => b.score !== null);
-    const score = usable.length === 0 ? 0 : round(usable.reduce((n, b) => n + b.score, 0) / usable.length);
-    scored.push({
+    const answers = byModule.get(module.id).length;
+    const hasScore = answers >= REQUIRED_ANSWERS;
+    const average = round(breakdown.reduce((n, b) => n + b.score, 0) / Math.max(1, breakdown.length));
+    rows.push({
       id: module.id,
       loc: module.loc,
       fileCount: module.fileCount,
       generatedFiles: module.generatedFiles,
-      score,
-      quizzed: recent.length > 0,
+      score: hasScore ? average : 0,
+      scored: hasScore,
+      answers,
       breakdown,
     });
   }
 
-  const weighted = scored.filter((m) => m.loc > 0);
+  const weighted = rows.filter((m) => m.loc > 0);
   const totalLoc = weighted.reduce((n, m) => n + m.loc, 0);
   const total = totalLoc === 0 ? 0 : round(weighted.reduce((n, m) => n + m.score * m.loc, 0) / totalLoc);
 
@@ -138,8 +140,9 @@ export async function report(repoRoot, { now = new Date(), described } = {}) {
     name: path.basename(scanned.repoRoot),
     commit: scanned.commit,
     total,
-    anyQuizzed: scored.some((m) => m.quizzed),
-    modules: scored,
+    anyScored: rows.some((m) => m.scored),
+    requiredAnswers: REQUIRED_ANSWERS,
+    modules: rows,
     edges: scanned.edges,
     unassigned: scanned.unassigned,
     warnings,
@@ -151,7 +154,7 @@ function round(n) {
 }
 
 export function badge(report) {
-  if (!report.anyQuizzed) {
+  if (!report.anyScored) {
     return { schemaVersion: 1, label: 'comprehension', message: 'no data', color: 'lightgrey' };
   }
   const percent = Math.round(report.total * 100);

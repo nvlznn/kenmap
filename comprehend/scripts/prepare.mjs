@@ -2,6 +2,7 @@
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import * as config from './lib/config.mjs';
+import { LEGACY_TYPE, QUESTION_TYPES, REQUIRED_ANSWERS } from './lib/config.mjs';
 import { isMainModule } from './lib/cli.mjs';
 import * as git from './lib/git.mjs';
 import { readResults } from './lib/results.mjs';
@@ -41,26 +42,44 @@ export async function prepare(cwd, { target, lines = DEFAULT_LINES } = {}) {
   const status = await git.raw(repoRoot, ['status', '--porcelain', '--', ...module.globs.map((g) => `:(glob)${g}`)]);
   const dirty = status.split('\n').filter(Boolean).map((line) => line.slice(3));
 
+  const asked = results.filter((r) => r.module === moduleId);
   return {
     repoRoot,
     commit: described.commit,
     module: { id: module.id, loc: module.loc, fileCount: module.fileCount },
     dirty,
-    previous: results.filter((r) => r.module === moduleId).slice(-PREVIOUS_QUESTIONS).map((r) => r.question),
+    type: nextType(asked.map((r) => r.type)),
+    previous: asked.slice(-PREVIOUS_QUESTIONS).map((r) => ({ type: r.type ?? LEGACY_TYPE, question: r.question })),
     ...pickCode(module, described, lines),
   };
 }
 
+/** The type this module has been asked least; ties go to the earlier one in QUESTION_TYPES. */
+export function nextType(askedTypes) {
+  const counts = new Map(QUESTION_TYPES.map((t) => [t.id, 0]));
+  for (const type of askedTypes) {
+    const id = type ?? LEGACY_TYPE;
+    if (counts.has(id)) counts.set(id, counts.get(id) + 1);
+  }
+  return QUESTION_TYPES.reduce((best, t) => (counts.get(t.id) < counts.get(best.id) ? t : best));
+}
+
 /**
- * A module nobody has been quizzed on scores zero by definition, so the
- * churn computation — the slow part — is only needed once every module has
- * been asked about at least once.
+ * Finish what was started: a module part way to its first score comes
+ * before a new one, so the map fills in instead of scattering. A module
+ * without a score counts as zero by definition, so the churn computation —
+ * the slow part — is only needed once every module has a score.
  */
 async function pickWeakest(repoRoot, scanned, described, results) {
   const live = scanned.modules.filter((m) => m.loc > 0);
   if (live.length === 0) return null;
-  const quizzed = new Set(results.map((r) => r.module));
-  const fresh = live.filter((m) => !quizzed.has(m.id));
+  const counts = new Map();
+  for (const r of results) counts.set(r.module, (counts.get(r.module) ?? 0) + 1);
+  const answered = (m) => counts.get(m.id) ?? 0;
+
+  const started = live.filter((m) => answered(m) > 0 && answered(m) < REQUIRED_ANSWERS);
+  if (started.length > 0) return started.sort((a, b) => answered(b) - answered(a) || b.loc - a.loc)[0].id;
+  const fresh = live.filter((m) => answered(m) === 0);
   if (fresh.length > 0) return fresh.sort((a, b) => b.loc - a.loc)[0].id;
 
   const scored = await report(repoRoot, { described });
@@ -115,8 +134,12 @@ export function format(result) {
     result.dirty.length
       ? `未 commit 的變更：${result.dirty.join('、')}（分數以目前 commit 為準）`
       : '未 commit 的變更：無',
+    `這次題型：${result.type.label}（--type ${result.type.id}）`,
     `顯示 ${result.shown}/${result.readable} 檔（上限 ${result.budget} 行）`,
-    result.previous.length ? `之前問過（別重複）：\n${result.previous.map((q) => `- ${q}`).join('\n')}` : '之前問過：無',
+    result.previous.length
+      ? `之前問過（別重複）：\n${result.previous.map((p) =>
+        `- [${QUESTION_TYPES.find((t) => t.id === p.type)?.label ?? p.type}] ${p.question}`).join('\n')}`
+      : '之前問過：無',
   ];
   const body = result.files.map((f) =>
     `\n── ${f.path}${f.importedBy ? `（被其他模組 import ${f.importedBy} 次）` : ''}${f.truncated ? '（截斷）' : ''} ──\n${f.text}`);

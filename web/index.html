@@ -73,7 +73,7 @@
 <body>
 <header>
   <h1 id="repo">KenMap <span>— comprehension map</span></h1>
-  <div class="legend"><span>0%</span><div class="bar" id="legendBar"></div><span>100%</span><span>· not quizzed counts as 0%</span></div>
+  <div class="legend"><span>0%</span><div class="bar" id="legendBar"></div><span>100%</span><span>· a module needs 3 answers before it gets a score, and counts as 0% until then</span></div>
   <div class="total"><span id="total">—</span><small id="totalNote">no answers recorded yet</small></div>
 </header>
 <div id="warnings"></div>
@@ -89,7 +89,7 @@
 const REMOTE_BRANCH = 'kenmap-data';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-/** One hue sweep, red (0) to green (1). Never quizzed is 0, so also red. */
+/** One hue sweep, red (0) to green (1). A module without a score yet is 0, so also red. */
 function colorFor(score) {
   const s = Math.max(0, Math.min(1, Number(score) || 0));
   return `hsl(${Math.round(120 * s)} 55% 63%)`;
@@ -181,8 +181,8 @@ function upright(deg) {
 function render(report) {
   const title = report.repo || report.name || 'repo';
   document.getElementById('repo').innerHTML = `KenMap <span>— ${escapeHtml(title)}</span>`;
-  document.getElementById('total').textContent = report.anyQuizzed ? Math.round(report.total * 100) + '%' : '—';
-  document.getElementById('totalNote').textContent = report.anyQuizzed ? 'weighted by lines of code' : 'no answers recorded yet';
+  document.getElementById('total').textContent = report.anyScored ? Math.round(report.total * 100) + '%' : '—';
+  document.getElementById('totalNote').textContent = report.anyScored ? 'weighted by lines of code' : 'no module has a score yet';
   document.getElementById('warnings').innerHTML = (report.warnings || [])
     .map((w) => `<div class="warn">${escapeHtml(w)}</div>`).join('');
 
@@ -248,21 +248,24 @@ function render(report) {
       <text text-anchor="middle" x="${apex.x}" y="${apex.y}" dy="12">${escapeHtml(label)}</text></g>`);
   }
 
-  const nodes = [{ id: '__root__', label: title, score: report.total, quizzed: report.anyQuizzed },
-    ...report.modules.map((m) => ({ id: m.id, label: m.id, score: m.score, quizzed: m.quizzed }))];
+  const required = report.requiredAnswers;
+  const nodes = [{ id: '__root__', label: title, score: report.total, scored: report.anyScored, answers: 0 },
+    ...report.modules.map((m) => ({ id: m.id, label: m.id, score: m.score, scored: m.scored, answers: m.answers }))];
   for (const node of nodes) {
     const p = positions.get(node.id);
     const r = sizes.get(node.id);
     const lines = wrapLabel(node.label, r);
-    const pct = node.quizzed ? Math.round(node.score * 100) + '%' : '—';
+    // Until a module has its score, show how far along it is instead.
+    const pct = node.scored ? Math.round(node.score * 100) + '%'
+      : node.answers ? `${node.answers}/${required}` : '—';
     const total = lines.length + 1;
     const first = -((total - 1) * 13) / 2 + 4;
     const text = lines.map((line, i) =>
       `<text text-anchor="middle" y="${first + i * 13}">${escapeHtml(line)}</text>`).join('')
       + `<text class="pct" text-anchor="middle" y="${first + lines.length * 13 + 1}">${pct}</text>`;
     parts.push(`<g class="node" data-id="${escapeHtml(node.id)}" transform="translate(${p.x},${p.y})">
-      <title>${escapeHtml(node.label)} — ${node.quizzed ? pct : 'not quizzed'}</title>
-      <circle r="${r}" fill="${colorFor(node.quizzed ? node.score : 0)}"></circle>${text}</g>`);
+      <title>${escapeHtml(node.label)} — ${node.scored ? pct : `${node.answers} of ${required} answers, no score yet`}</title>
+      <circle r="${r}" fill="${colorFor(node.scored ? node.score : 0)}"></circle>${text}</g>`);
   }
 
   // A two-module repo should not blow its circles up to fill the screen.
@@ -301,7 +304,7 @@ function render(report) {
       scene.querySelector(`.node[data-id="${CSS.escape(other)}"]`)?.classList.add('active');
     });
     if (id === '__root__') showRepo(report, title);
-    else showModule(report.modules.find((m) => m.id === id));
+    else showModule(report.modules.find((m) => m.id === id), report.requiredAnswers);
   });
 }
 
@@ -313,12 +316,12 @@ function resetPanel() {
 }
 
 function showRepo(report, title) {
-  const quizzed = report.modules.filter((m) => m.quizzed).length;
+  const withScore = report.modules.filter((m) => m.scored).length;
   document.getElementById('panelTitle').textContent = title;
   document.getElementById('panelHint').textContent = 'The whole repo, weighted by lines of code.';
   const rows = [
-    ['score', report.anyQuizzed ? Math.round(report.total * 100) + '%' : '—'],
-    ['modules quizzed', `${quizzed} of ${report.modules.length}`],
+    ['score', report.anyScored ? Math.round(report.total * 100) + '%' : '—'],
+    ['modules with a score', `${withScore} of ${report.modules.length}`],
     ['lines in modules', report.modules.reduce((n, m) => n + m.loc, 0).toLocaleString()],
   ];
   if (report.unassigned) rows.push(['lines outside any module', report.unassigned.loc.toLocaleString()]);
@@ -326,14 +329,17 @@ function showRepo(report, title) {
     rows.map(([k, v]) => `<div class="row"><span>${k}</span><span>${v}</span></div>`).join('');
 }
 
-function showModule(module) {
+function showModule(module, required) {
+  const missing = required - module.answers;
   document.getElementById('panelTitle').textContent = module.id;
-  document.getElementById('panelHint').textContent = module.quizzed
+  document.getElementById('panelHint').textContent = module.scored
     ? 'Averaged over the answers below.'
-    : 'Never quizzed — it counts as zero until you are.';
+    : module.answers
+      ? `${module.answers} of ${required} answers — ${missing} more before it gets a score. It counts as 0% until then.`
+      : `Never quizzed — it needs ${required} answers before it gets a score, and counts as 0% until then.`;
 
   const rows = [
-    ['score', module.quizzed ? Math.round(module.score * 100) + '%' : '—'],
+    ['score', module.scored ? Math.round(module.score * 100) + '%' : `no score yet (${module.answers}/${required})`],
     ['lines', module.loc.toLocaleString()],
     ['files', module.fileCount],
   ];

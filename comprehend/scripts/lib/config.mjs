@@ -12,6 +12,27 @@ export const BADGE_FILE = 'badge.json';
 export const SCORE_STEPS = [0, 0.25, 0.5, 0.75, 1];
 /** A module's score averages its most recent records, each churn-adjusted. */
 export const RECENT_RECORDS = 3;
+/**
+ * One answer is too thin to call a module understood, so a module has no
+ * score — and counts as zero — until it has this many. Each answer still
+ * gets its own grade along the way.
+ */
+export const REQUIRED_ANSWERS = 3;
+
+/**
+ * Question types, rotated per module so every module is eventually asked
+ * about each. Trade-offs come first, so a module's very first question is
+ * always about the price it pays. Records from before types existed count
+ * as 'why', which is what every question used to be.
+ */
+export const QUESTION_TYPES = [
+  { id: 'tradeoff', label: '取捨與技術債' },
+  { id: 'reading', label: '讀懂程式碼' },
+  { id: 'alternative', label: '為什麼選 A 不選 B' },
+  { id: 'scenario', label: '情境改變' },
+  { id: 'why', label: '為什麼這樣設計' },
+];
+export const LEGACY_TYPE = 'why';
 
 export class ConfigError extends Error {}
 

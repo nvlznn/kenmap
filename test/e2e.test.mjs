@@ -49,19 +49,27 @@ test('the whole flow: discover, configure, answer, publish, then watch a rewrite
   assert.deepEqual(written.modules.map((m) => m.id), ['ui', 'data']);
   await repo.commit('chore: add kenmap config');
 
-  // 3. Answering moves the map.
+  // 3. Answering moves the map — once a module has its three answers.
   const before = await report(repo.path);
-  assert.equal(before.anyQuizzed, false);
+  assert.equal(before.anyScored, false);
   assert.equal(badge(before).message, 'no data');
 
-  repo.clock += 60 * 1000;
-  await record(repo.path, {
-    module: 'ui', score: 1,
-    question: 'Why do both screens go through the repository instead of the cache directly?',
-    answer: 'So invalidation stays in one place.',
-    rationale: 'Named the single owner of invalidation.',
-  }, { now: new Date(repo.clock) });
+  const answerUi = async () => {
+    repo.clock += 60 * 1000;
+    await record(repo.path, {
+      module: 'ui', score: 1,
+      question: 'Why do both screens go through the repository instead of the cache directly?',
+      answer: 'So invalidation stays in one place.',
+      rationale: 'Named the single owner of invalidation.',
+    }, { now: new Date(repo.clock) });
+  };
+  await answerUi();
+  const partway = await report(repo.path);
+  assert.equal(partway.modules.find((m) => m.id === 'ui').scored, false, 'one answer is not a score yet');
+  assert.equal(badge(partway).message, 'no data');
 
+  await answerUi();
+  await answerUi();
   const answered = await report(repo.path);
   const uiBefore = answered.modules.find((m) => m.id === 'ui');
   assert.equal(uiBefore.score, 1);

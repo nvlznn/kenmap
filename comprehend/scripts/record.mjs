@@ -2,7 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { RESULTS_FILE, SCORE_STEPS } from './lib/config.mjs';
+import { LEGACY_TYPE, QUESTION_TYPES, REQUIRED_ANSWERS, RESULTS_FILE, SCORE_STEPS } from './lib/config.mjs';
 import * as config from './lib/config.mjs';
 import * as git from './lib/git.mjs';
 import { ensure } from './lib/worktree.mjs';
@@ -24,6 +24,10 @@ export async function record(cwd, entry, { now = new Date() } = {}) {
     throw new Error(`score must be one of ${SCORE_STEPS.join(' / ')}, got ${entry.score}`);
   }
   if (!entry.question?.trim()) throw new Error('question text is required — the score has to be auditable');
+  const type = entry.type ?? LEGACY_TYPE;
+  if (!QUESTION_TYPES.some((t) => t.id === type)) {
+    throw new Error(`unknown question type "${type}" — known: ${QUESTION_TYPES.map((t) => t.id).join(', ')}`);
+  }
 
   const line = {
     user: conf.user,
@@ -32,6 +36,7 @@ export async function record(cwd, entry, { now = new Date() } = {}) {
     at: now.toISOString(),
     level: entry.level ?? 'design',
     score: entry.score,
+    type,
     question: entry.question,
     answer: entry.answer ?? '',
     rationale: entry.rationale ?? '',
@@ -51,6 +56,7 @@ if (isMainModule(import.meta.url)) {
     answer: { type: 'string', default: '' },
     rationale: { type: 'string', default: '' },
     level: { type: 'string', default: 'design' },
+    type: { type: 'string' },
     render: { type: 'boolean', default: false },
     'no-open': { type: 'boolean', default: false },
   } });
@@ -72,10 +78,12 @@ if (isMainModule(import.meta.url)) {
     const now = after.modules.find((m) => m.id === values.module);
     process.stdout.write(JSON.stringify({
       module: values.module,
-      moduleBefore: was?.quizzed ? was.score : null,
-      moduleAfter: now?.score ?? null,
-      totalBefore: before.anyQuizzed ? before.total : null,
-      totalAfter: after.total,
+      moduleBefore: was?.scored ? was.score : null,
+      moduleAfter: now?.scored ? now.score : null,
+      answers: now?.answers ?? 0,
+      required: REQUIRED_ANSWERS,
+      totalBefore: before.anyScored ? before.total : null,
+      totalAfter: after.anyScored ? after.total : null,
       map: pathToFileURL(page).href,
       opened: values['no-open'] ? false : await openInBrowser(page),
     }, null, 2) + '\n');
