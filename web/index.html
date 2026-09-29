@@ -293,6 +293,9 @@
   .term pre {
     margin: 0; padding: 14px 16px 16px; font: 14px/1.7 var(--mono); white-space: pre; overflow-x: auto;
   }
+  /* The page highlights in ink on paper; inside a black terminal that is
+     black on black, so selection flips to paper on ink here instead. */
+  .term ::selection { background: #ededed; color: #0d0d0d; }
   .term .p { color: #7c7c7c; user-select: none; }
   .term .c { color: #7c7c7c; }
   .term .ok { color: #7ee07a; }
@@ -371,8 +374,8 @@
       </div>
       <div class="term" data-copy="claude plugin marketplace add nvlznn/kenmap&#10;claude plugin install kenmap@noky">
         <div class="term-bar"><i></i><i></i><i></i><span>zsh</span><button class="term-copy" type="button">Copy</button></div>
-        <pre><span class="p">$</span> claude plugin marketplace add nvlznn/kenmap
-<span class="p">$</span> claude plugin install kenmap@noky</pre>
+        <pre><span class="p">$ </span>claude plugin marketplace add nvlznn/kenmap
+<span class="p">$ </span>claude plugin install kenmap@noky</pre>
       </div>
     </li>
     <li>
@@ -383,8 +386,8 @@
       </div>
       <div class="term" data-copy="cd path/to/your-repo&#10;claude">
         <div class="term-bar"><i></i><i></i><i></i><span>zsh</span><button class="term-copy" type="button">Copy</button></div>
-        <pre><span class="p">$</span> cd path/to/your-repo
-<span class="p">$</span> claude
+        <pre><span class="p">$ </span>cd path/to/your-repo
+<span class="p">$ </span>claude
 <span class="c"># or open the folder in VS Code and start Claude Code there</span></pre>
       </div>
     </li>
@@ -396,7 +399,7 @@
       </div>
       <div class="term" data-copy="/kenmap:comprehend init">
         <div class="term-bar"><i></i><i></i><i></i><span>zsh</span><button class="term-copy" type="button">Copy</button></div>
-        <pre><span class="p">›</span> /kenmap:comprehend init
+        <pre><span class="p">› </span>/kenmap:comprehend init
 <span class="c"># proposes modules → you confirm → writes .kenmap.json</span></pre>
       </div>
     </li>
@@ -408,7 +411,7 @@
       </div>
       <div class="term" data-copy="/kenmap:comprehend">
         <div class="term-bar"><i></i><i></i><i></i><span>zsh</span><button class="term-copy" type="button">Copy</button></div>
-        <pre><span class="p">›</span> /kenmap:comprehend
+        <pre><span class="p">› </span>/kenmap:comprehend
 <span class="c"># again whenever you like — it picks the weakest module</span></pre>
       </div>
     </li>
@@ -421,7 +424,7 @@
       </div>
       <div class="term" data-copy="publish">
         <div class="term-bar"><i></i><i></i><i></i><span>Claude Code</span><button class="term-copy" type="button">Copy</button></div>
-        <pre><span class="p">›</span> publish
+        <pre><span class="p">› </span>publish
 <span class="c"># pushes to the kenmap-data branch, never force-pushes</span></pre>
       </div>
     </li>
@@ -433,7 +436,7 @@
       </div>
       <div class="term" data-copy="claude plugin update kenmap@noky">
         <div class="term-bar"><i></i><i></i><i></i><span>zsh</span><button class="term-copy" type="button">Copy</button></div>
-        <pre><span class="p">$</span> claude plugin update kenmap@noky</pre>
+        <pre><span class="p">$ </span>claude plugin update kenmap@noky</pre>
       </div>
     </li>
   </ol>
