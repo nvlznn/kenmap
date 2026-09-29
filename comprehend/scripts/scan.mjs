@@ -10,8 +10,8 @@ import { isMainModule } from './lib/cli.mjs';
  * A module whose globs match nothing is loud, never silent: dropping it would
  * remove it from the weighted total and make the repo score rise.
  */
-export async function scan(cwd, cfg) {
-  const described = await describe(cwd);
+export async function scan(cwd, cfg, described) {
+  described ??= await describe(cwd);
   const conf = cfg ?? (await config.read(described.repoRoot));
 
   const moduleOf = new Map();

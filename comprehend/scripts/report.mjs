@@ -6,7 +6,7 @@ import { BADGE_FILE, RECENT_RECORDS, REPORT_FILE } from './lib/config.mjs';
 import { countLines, isBinary } from './lib/files.mjs';
 import * as git from './lib/git.mjs';
 import { ensure } from './lib/worktree.mjs';
-import { readResults } from './record.mjs';
+import { readResults } from './lib/results.mjs';
 import { scan } from './scan.mjs';
 import { isMainModule } from './lib/cli.mjs';
 
@@ -57,8 +57,8 @@ async function baselineFor(repoRoot, record) {
   return { commit: null, recovered: false };
 }
 
-export async function report(repoRoot, { now = new Date() } = {}) {
-  const scanned = await scan(repoRoot);
+export async function report(repoRoot, { now = new Date(), described } = {}) {
+  const scanned = await scan(repoRoot, undefined, described);
   const dataDir = await ensure(repoRoot);
   const results = await readResults(dataDir);
   const modules = scanned.modules;

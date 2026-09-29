@@ -70,7 +70,7 @@ export async function describe(cwd) {
   const packages = findPackages(tracked, blobs);
   const edges = fileEdges(tracked.filter((f) => !f.path.startsWith(`${DATA_DIR}/`)), blobs, packages);
 
-  return { repoRoot, commit, files, packages, edges, languages: languagesUsed(tracked) };
+  return { repoRoot, commit, files, packages, edges, blobs, languages: languagesUsed(tracked) };
 }
 
 /** Aggregated at every depth so module boundaries can be cut wherever they fit. */
@@ -131,8 +131,33 @@ export async function structure(cwd) {
   };
 }
 
+/**
+ * One line per directory that holds at least 0.5% of the lines, instead of
+ * the full JSON: the init conversation needs the shape of the repo, and a
+ * big repo's full dump is slow to read for no gain.
+ */
+export function compact(result) {
+  const floor = Math.max(20, result.totals.loc * 0.005);
+  const lines = [
+    `files ${result.totals.files} · lines ${result.totals.loc} · generated ${result.totals.generated} · import edges ${result.edgeCount}`,
+    `languages: ${result.languages.join(', ') || 'none recognised'}`,
+    `packages: ${result.packages.map((p) => `${p.name} @ ${p.root}`).join(', ') || 'none'}`,
+    '',
+    'lines  files  gen  in  out  path',
+  ];
+  for (const d of result.directories) {
+    if (d.path === '.' || d.loc < floor) continue;
+    lines.push([String(d.loc).padStart(5), String(d.files).padStart(6), String(d.generatedFiles).padStart(4),
+      String(d.edgesIn).padStart(3), String(d.edgesOut).padStart(4), ` ${d.path}/`].join(' '));
+  }
+  return lines.join('\n');
+}
+
 if (isMainModule(import.meta.url)) {
-  const { values } = parseArgs({ options: { repo: { type: 'string', default: process.cwd() } } });
+  const { values } = parseArgs({ options: {
+    repo: { type: 'string', default: process.cwd() },
+    compact: { type: 'boolean', default: false },
+  } });
   const result = await structure(values.repo);
-  process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+  process.stdout.write((values.compact ? compact(result) : JSON.stringify(result, null, 2)) + '\n');
 }

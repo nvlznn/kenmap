@@ -75,7 +75,7 @@ if (isMainModule(import.meta.url)) {
   const url = pathToFileURL(out).href;
   const opened = values['no-open'] ? false : await openInBrowser(out);
 
-  if (opened) process.stdout.write('Opened the map in your browser. If nothing showed up, use this link:\n');
-  else if (!values['no-open']) process.stdout.write("Couldn't open a browser automatically — open this link:\n");
+  if (opened) process.stdout.write('已在瀏覽器打開地圖，沒看到的話點這個連結：\n');
+  else if (!values['no-open']) process.stdout.write('沒辦法自動打開瀏覽器，請點這個連結：\n');
   process.stdout.write(url + '\n');
 }

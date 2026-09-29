@@ -7,6 +7,9 @@ import * as config from './lib/config.mjs';
 import * as git from './lib/git.mjs';
 import { ensure } from './lib/worktree.mjs';
 import { isMainModule } from './lib/cli.mjs';
+import { pathToFileURL } from 'node:url';
+import { openInBrowser, render } from './render.mjs';
+import { writeReport } from './report.mjs';
 
 /** One quiz is one question is one record. */
 export async function record(cwd, entry, { now = new Date() } = {}) {
@@ -38,15 +41,6 @@ export async function record(cwd, entry, { now = new Date() } = {}) {
   return { file: path.join(dir, RESULTS_FILE), entry: line };
 }
 
-export async function readResults(dir) {
-  try {
-    const raw = await fs.readFile(path.join(dir, RESULTS_FILE), 'utf8');
-    return raw.split('\n').filter(Boolean).map((l) => JSON.parse(l));
-  } catch {
-    return [];
-  }
-}
-
 if (isMainModule(import.meta.url)) {
   const { values } = parseArgs({ options: {
     repo: { type: 'string', default: process.cwd() },
@@ -56,7 +50,25 @@ if (isMainModule(import.meta.url)) {
     answer: { type: 'string', default: '' },
     rationale: { type: 'string', default: '' },
     level: { type: 'string', default: 'design' },
+    render: { type: 'boolean', default: false },
+    'no-open': { type: 'boolean', default: false },
   } });
   const result = await record(values.repo, { ...values, score: Number(values.score) });
-  process.stdout.write(JSON.stringify(result.entry, null, 2) + '\n');
+  if (!values.render) {
+    process.stdout.write(JSON.stringify(result.entry, null, 2) + '\n');
+  } else {
+    // One call instead of record → report → render: every extra tool call is
+    // a round trip the user sits through.
+    const repoRoot = await git.repoRoot(values.repo);
+    const report = await writeReport(repoRoot);
+    const page = await render(repoRoot, { open: false, report });
+    const module = report.modules.find((m) => m.id === values.module);
+    process.stdout.write(JSON.stringify({
+      module: values.module,
+      moduleScore: module?.score ?? null,
+      total: report.total,
+      map: pathToFileURL(page).href,
+      opened: values['no-open'] ? false : await openInBrowser(page),
+    }, null, 2) + '\n');
+  }
 }
