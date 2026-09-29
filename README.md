@@ -1,10 +1,42 @@
 # KenMap
 
+[![GitHub stars](https://img.shields.io/github/stars/nvlznn/kenmap?style=social)](https://github.com/nvlznn/kenmap) · 網站：[kenmap.noky.dev](https://kenmap.noky.dev)
+
 量測你還懂多少自己 repo 裡的程式碼。
 
 覆蓋率工具告訴你測試碰過哪些行；KenMap 告訴你哪些模組你還解釋得出來。它一次考你一個模組，把分數記下來，並隨著底下的程式碼變動而讓分數下降——所以某個你沒跟上的 AI 改寫，會讓那個模組自己變紅。
 
 結果是一張 repo 的熱力圖，加上一個 README 徽章。
+
+## 安裝
+
+KenMap 是一個 Claude Code plugin。需要 Node.js 20 以上和 git。在 Claude Code 裡：
+
+```
+/plugin marketplace add nvlznn/kenmap
+/plugin install kenmap@noky
+```
+
+接著在任何 repo 裡：
+
+```
+/kenmap:comprehend init                    # 探測結構，談定模組邊界
+/kenmap:comprehend                         # 自動選模組，考你最不熟的部分
+/kenmap:comprehend <module id>             # 指定模組，用 init 談定的 id
+/kenmap:comprehend <file or folder path>   # 指定模組，直接給路徑也行，不用背 id
+/kenmap:comprehend web                     # 打開地圖，並顯示連結
+/kenmap:comprehend reset                   # 清除這個 repo 裡 KenMap 的所有資料，重新開始
+/kenmap:comprehend help                    # 顯示所有指令
+```
+
+完整操作說明（`init` 流程、地圖怎麼看、疑難排解）見 [docs/GUIDE.md](docs/GUIDE.md)。
+
+## 更新
+
+第三方 marketplace 預設不會自動更新。擇一：
+
+- 手動：`/plugin marketplace update noky`
+- 自動：`/plugin` → Marketplaces → noky → Enable auto-update
 
 ## 分數怎麼算
 
@@ -23,35 +55,30 @@ LLM 只負責出題與批改。掃描、計分、以及所有寫檔動作都是�
 
 - `.kenmap.json` 放在 main 分支，保存你確認過的模組邊界。
 - orphan 分支 `kenmap-data` 保存測驗紀錄、報告與徽章。
-- 沒有後端，沒有資料庫。
+- 網站只有一個負責 GitHub 登入的小後端（`api/`），沒有資料庫。
 
-## 安裝
+## 開發
 
-KenMap 是一個 Claude Code skill。用連結而不是複製，網頁模板才找得到；資料夾
-名稱要叫 `comprehend`，跟 `SKILL.md` 裡登記的名字一致，`/comprehend` 才認得到：
-
-```bash
-ln -s "$PWD/comprehend" ~/.claude/skills/comprehend
-```
-
-接著在任何 repo 裡：
+從本機目錄載入 plugin，改完程式在 Claude Code 裡打 `/reload-plugins` 就生效，不用改版本號：
 
 ```
-/comprehend init                    # 探測結構，談定模組邊界
-/comprehend                         # 自動選模組，考你最不熟的部分
-/comprehend <module id>             # 指定模組，用 init 談定的 id
-/comprehend <file or folder path>   # 指定模組，直接給路徑也行，不用背 id
-/comprehend web                     # 打開地圖，並顯示連結
-/comprehend reset                   # 清除這個 repo 裡 KenMap 的所有資料，重新開始
-/comprehend help                    # 顯示所有指令
+/plugin marketplace add ~/dev/kenmap
+/plugin install kenmap@noky
 ```
 
-完整操作說明（安裝、`init` 流程、地圖怎麼看、疑難排解）見 [docs/GUIDE.md](docs/GUIDE.md)。
-
-## 現況
-
-已經跑通全流程：探測、計分、skill、本地地圖、發布與徽章。還沒驗證過的：真實的 GitHub remote，以及長期連續出題下的題目品質。
+或只在這次 session 載入：`claude --plugin-dir .`
 
 ```bash
 npm test
 ```
+
+## 發版
+
+使用者只有在版本號變了才會收到更新。發版時：
+
+1. 同時改 `.claude-plugin/plugin.json` 和 `package.json` 的 `version`（測試會檢查兩者一致）。
+2. commit、push 到 main。
+
+## 授權
+
+[MIT](LICENSE)

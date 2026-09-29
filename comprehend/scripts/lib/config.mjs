@@ -34,7 +34,7 @@ export const QUESTION_TYPES = [
 ];
 export const LEGACY_TYPE = 'why';
 
-/** `/comprehend <id>` could not tell a module with one of these names from the subcommand. */
+/** `/kenmap:comprehend <id>` could not tell a module with one of these names from the subcommand. */
 export const RESERVED_IDS = ['init', 'reset', 'web', 'help'];
 
 export class ConfigError extends Error {}
@@ -58,7 +58,7 @@ export async function read(repoRoot) {
   try {
     raw = await fs.readFile(file, 'utf8');
   } catch {
-    throw new ConfigError(`${CONFIG_FILENAME} not found in ${repoRoot} — run /comprehend init first`);
+    throw new ConfigError(`${CONFIG_FILENAME} not found in ${repoRoot} — run /kenmap:comprehend init first`);
   }
   let parsed;
   try {
@@ -87,7 +87,7 @@ export function validate(config) {
       fail(`module id ${JSON.stringify(id)} must be alphanumeric with . _ - and no whitespace`);
     }
     if (RESERVED_IDS.includes(id.toLowerCase())) {
-      fail(`module id ${JSON.stringify(id)} is a /comprehend subcommand — pick another name (reserved: ${RESERVED_IDS.join(', ')})`);
+      fail(`module id ${JSON.stringify(id)} is a /kenmap:comprehend subcommand — pick another name (reserved: ${RESERVED_IDS.join(', ')})`);
     }
     const globs = modules[id];
     if (!Array.isArray(globs) || globs.length === 0) fail(`module ${id} must list at least one glob`);

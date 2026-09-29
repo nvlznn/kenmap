@@ -46,7 +46,7 @@ export async function render(cwd, { open = true, report } = {}) {
   try {
     template = await fs.readFile(TEMPLATE, 'utf8');
   } catch {
-    throw new Error(`page template missing at ${TEMPLATE} — install the skill by linking the kenmap repo, not by copying skill/ alone`);
+    throw new Error(`page template missing at ${TEMPLATE} — install KenMap as a plugin (/plugin install kenmap@noky), not by copying comprehend/ alone`);
   }
 
   const injected = template.replace(

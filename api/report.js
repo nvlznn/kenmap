@@ -16,7 +16,7 @@ export async function GET(request) {
   try {
     const report = await readReport(session.token, repo);
     if (!report) {
-      return json({ error: `no published report in ${repo} — run /comprehend there, then publish` },
+      return json({ error: `no published report in ${repo} — run /kenmap:comprehend there, then publish` },
         { status: 404, cookies: [setCookie] });
     }
     return json({ ...report, repo }, { cookies: [setCookie] });

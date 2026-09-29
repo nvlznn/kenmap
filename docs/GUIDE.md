@@ -7,13 +7,13 @@
 ## 目錄
 
 1. [安裝](#1-安裝)
-2. [第一次在一個 repo 裡使用：`/comprehend init`](#2-第一次在一個-repo-裡使用comprehend-init)
-3. [日常使用：`/comprehend`](#3-日常使用comprehend)
-4. [指定模組：`/comprehend <module-or-path>`](#4-指定模組comprehend-module-or-path)
+2. [第一次在一個 repo 裡使用：`/kenmap:comprehend init`](#2-第一次在一個-repo-裡使用kenmapcomprehend-init)
+3. [日常使用：`/kenmap:comprehend`](#3-日常使用kenmapcomprehend)
+4. [指定模組：`/kenmap:comprehend <module-or-path>`](#4-指定模組kenmapcomprehend-module-or-path)
 5. [看懂地圖頁面](#5-看懂地圖頁面)
 6. [分數是怎麼算出來的](#6-分數是怎麼算出來的)
 7. [發布與 README 徽章](#7-發布與-readme-徽章)
-8. [清除 KenMap 的所有資料：`/comprehend reset`](#8-清除-kenmap-的所有資料comprehend-reset)
+8. [清除 KenMap 的所有資料：`/kenmap:comprehend reset`](#8-清除-kenmap-的所有資料kenmapcomprehend-reset)
 9. [不透過 skill，直接下指令](#9-不透過-skill直接下指令)
 10. [疑難排解](#10-疑難排解)
 11. [目前的已知限制](#11-目前的已知限制)
@@ -22,48 +22,41 @@
 
 ## 1. 安裝
 
-KenMap 是一個 Claude Code skill，不是獨立 app，也不需要另外開瀏覽器登入任何地方。
+KenMap 是一個 Claude Code plugin，不是獨立 app。需要 Node.js 20 以上和 git。
 
-```bash
-git clone git@github.com:nvlznn/kenmap.git
-ln -s "$(pwd)/kenmap/comprehend" ~/.claude/skills/comprehend
-```
-
-第二行是關鍵：**一定要用 `ln -s`（建立捷徑），不能用 `cp` 複製**。原因是這個 skill 底下的程式會回頭去找同一個 repo 裡的 `web/index.html`（地圖網頁的模板），如果你複製一份 `comprehend/` 資料夾到別的地方，這個模板就找不到了。用捷徑的話，之後你 `git pull` 更新這個 repo，Claude Code 讀到的也會自動跟著更新，不用重裝。
-
-**確認安裝成功**：重開一次 Claude Code 對話，看它是否認得 `comprehend` 這個 skill（在對話一開始的系統資訊裡會列出來）。你可以檢查：
-
-```bash
-ls -la ~/.claude/skills/comprehend
-```
-
-應該會看到一行像這樣，箭頭指回你 clone 下來的位置：
+在 Claude Code 裡打這兩行（terminal 或 VSCode 擴充套件都可以）：
 
 ```
-lrwxr-xr-x  comprehend -> /你的路徑/kenmap/comprehend
+/plugin marketplace add nvlznn/kenmap
+/plugin install kenmap@noky
 ```
 
-裝好之後打 `/comprehend help`，會用一張表列出所有指令。
+第一行把 KenMap 的 marketplace（名字叫 `noky`）加進你的 Claude Code，第二行從裡面安裝 `kenmap` 這個 plugin。不需要 clone 任何東西。
+
+裝好之後打 `/kenmap:comprehend help`，會用一張表列出所有指令。指令前面的 `kenmap:` 是 plugin 的名字，Claude Code 規定 plugin 裡的指令都要帶這個前綴。
 
 ### 之後怎麼取得更新
 
-因為裝的是捷徑不是複本，更新只需要在你 clone 下來的那個資料夾裡：
+第三方 marketplace 預設不會自動更新，擇一：
+
+- **手動**：`/plugin marketplace update noky`
+- **自動**：打 `/plugin` → Marketplaces → noky → Enable auto-update
+
+更新完開一個新對話就會用新版。
+
+### 從舊的安裝方式（symlink）換過來
+
+如果你之前是用 `ln -s ... ~/.claude/skills/comprehend` 裝的，先刪掉那個捷徑，不然會同時有 `/comprehend` 和 `/kenmap:comprehend` 兩份：
 
 ```bash
-cd kenmap
-git pull
+rm ~/.claude/skills/comprehend
 ```
 
-不用重新建捷徑，也不用重開 Claude Code——下一次開新對話就會讀到新版。
-
-**唯一的例外**：如果你是在 2026 年 9 月底之前裝的（那時候捷徑名字還叫
-`kenmap` 而不是 `comprehend`），`git pull` 之後你的捷徑會指向一個已經不存在
-的資料夾（舊的 `skill/` 被改名成 `comprehend/` 了）。這種情況要重新跑一次
-上面的安裝指令，其餘使用者不受影響。
+`rm` 刪的只是捷徑，不會動到你 clone 下來的 repo，也不會動到任何 repo 裡的作答紀錄。
 
 ---
 
-## 2. 第一次在一個 repo 裡使用：`/comprehend init`
+## 2. 第一次在一個 repo 裡使用：`/kenmap:comprehend init`
 
 **每個 repo 只需要做這一步一次。** 目的是讓 KenMap 認識這個 repo 的模組邊界。
 
@@ -72,7 +65,7 @@ git pull
 打開 Claude Code，站到你要測量的 repo 裡（讓那個 repo 成為目前對話的工作目錄），打：
 
 ```
-/comprehend init
+/kenmap:comprehend init
 ```
 
 ### 會發生的事，一步一步
@@ -103,22 +96,22 @@ repo 根目錄多一個 `.kenmap.json`，長得像這樣（實際內容依你的
 }
 ```
 
-**這份檔案之後不會自己變動**，除非你重新跑一次 `/comprehend init`。
+**這份檔案之後不會自己變動**，除非你重新跑一次 `/kenmap:comprehend init`。
 
 ### 之後想重新調整模組邊界
 
-再跑一次 `/comprehend init`。KenMap 不會直接覆蓋——它會先列出現有的模組跟各自的狀況，問你要保持不變、調整幾個、還是整個重來。
+再跑一次 `/kenmap:comprehend init`。KenMap 不會直接覆蓋——它會先列出現有的模組跟各自的狀況，問你要保持不變、調整幾個、還是整個重來。
 
 **要注意的地方**：如果你把某個模組的 id 改掉（例如把 `ui` 改成 `screens`），這個模組之前累積的所有測驗紀錄會跟著失聯——系統會把它當成一個全新的、從沒考過的模組。KenMap 會在你改之前先警告你這件事。
 
 ---
 
-## 3. 日常使用：`/comprehend`
+## 3. 日常使用：`/kenmap:comprehend`
 
 這是你會最常打的指令，每次只做一件事：考你一題，然後看分數怎麼變。
 
 ```
-/comprehend
+/kenmap:comprehend
 ```
 
 ### 會發生的事，一步一步
@@ -143,23 +136,23 @@ KenMap 刻意做得很短：只用中文回覆、不寒暄、不解釋自己在�
    如果**這個模組**有還沒 commit 的變更，題目下面會多一行提醒：分數是綁在目前的 commit 上。它只提醒、不會停下來問你要不要繼續。其他地方的未 commit 變更不影響這一題，所以不會提醒。
 3. **你憑印象回答**，不要去翻程式碼——分數量的是「你腦子裡還記得什麼」，不是「你能不能查到答案」。
 4. **KenMap 評分、記錄、更新地圖，一次完成。** 評分只有五種：0、0.25、0.5、0.75、1。這一題的完整內容——題目、你的回答、分數、理由、當下的 commit、時間——會被存下來，**不是只存一個數字**，分數才經得起事後檢查。地圖會跟著更新，但**不會自動跳出瀏覽器**。
-5. **回覆很短**：這題的分數和一兩句解釋，接著一張小表比較這個模組和整個 repo「作答之前」與「現在」的分數，最後一行是「接下來」提示，列出這時最可能用到的指令：模組還沒答滿 3 題時提示繼續考，有分數之後提示再考一題或說「發布」，兩種情況都會附上 `/comprehend help` 讓你查所有指令。地圖不另外提示，因為表格下面就有連結。每個流程（init、web、發布、reset）做完時也都會有這一行。表格下面一定會附上地圖連結，想看再點。**它不會自動推到 GitHub**，你說「發布」才會執行（見[第 7 節](#7-發布與-readme-徽章)）。
+5. **回覆很短**：這題的分數和一兩句解釋，接著一張小表比較這個模組和整個 repo「作答之前」與「現在」的分數，最後一行是「接下來」提示，列出這時最可能用到的指令：模組還沒答滿 3 題時提示繼續考，有分數之後提示再考一題或說「發布」，兩種情況都會附上 `/kenmap:comprehend help` 讓你查所有指令。地圖不另外提示，因為表格下面就有連結。每個流程（init、web、發布、reset）做完時也都會有這一行。表格下面一定會附上地圖連結，想看再點。**它不會自動推到 GitHub**，你說「發布」才會執行（見[第 7 節](#7-發布與-readme-徽章)）。
 
 ---
 
-## 4. 指定模組：`/comprehend <module-or-path>`
+## 4. 指定模組：`/kenmap:comprehend <module-or-path>`
 
 不想被系統自動挑，可以自己指定要考哪個模組：
 
 ```
-/comprehend ui
+/kenmap:comprehend ui
 ```
 
 或者更方便的，**直接給檔案或資料夾路徑**，不用記模組叫什麼名字——例如你正在看某個檔案，直接把路徑貼給它：
 
 ```
-/comprehend lib/ui/home_screen.dart
-/comprehend lib/ui/
+/kenmap:comprehend lib/ui/home_screen.dart
+/kenmap:comprehend lib/ui/
 ```
 
 KenMap 會自動判斷這個路徑屬於哪個模組。如果這個路徑**同時橫跨好幾個模組**（例如你給了一個很上層的資料夾），KenMap 不會亂猜，會列出有哪幾個候選，讓你自己選一個。
@@ -168,7 +161,7 @@ KenMap 會自動判斷這個路徑屬於哪個模組。如果這個路徑**同�
 
 ## 5. 看懂地圖頁面
 
-`/comprehend` 考完之後附上的那個連結，點開就是「地圖」。想直接打開，打 `/comprehend web`，它會用最新的分數重新產生地圖、打開瀏覽器，並附上連結。
+`/kenmap:comprehend` 考完之後附上的那個連結，點開就是「地圖」。想直接打開，打 `/kenmap:comprehend web`，它會用最新的分數重新產生地圖、打開瀏覽器，並附上連結。
 
 ### 畫面組成
 
@@ -183,8 +176,9 @@ KenMap 會自動判斷這個路徑屬於哪個模組。如果這個路徑**同�
 
 ### 本地模式 vs 遠端模式
 
-- **本地模式**：`/comprehend` 考完自動打開的就是這個，資料直接寫死在頁面裡，**不需要 push 到任何地方**，你自己電腦看得到就好。
-- **遠端模式**：網址後面加 `?repo=owner/repo-name`，頁面會去 GitHub 抓那個 repo 已經發布過的資料。要先發布過（見[第 7 節](#7-發布與-readme-徽章)）才看得到東西，而且**只能看公開 repo**。
+- **本地模式**：`/kenmap:comprehend` 考完自動打開的就是這個，資料直接寫死在頁面裡，**不需要 push 到任何地方**，你自己電腦看得到就好。
+- **網站**：[kenmap.noky.dev](https://kenmap.noky.dev)。用 GitHub 登入後按「Connect a repository」，在 GitHub 上選要連的 repo（組織的 repo 就選那個組織），之後就能在網站上看到每個 repo 的分數和地圖，**私有 repo 也可以**。KenMap 只要求讀取程式碼的權限，不會寫入任何東西。要先發布過（見[第 7 節](#7-發布與-readme-徽章)）才看得到分數。
+- **分享連結**：`https://kenmap.noky.dev/?repo=owner/repo-name`。公開 repo 不用登入就能看，README 徽章點進去就是這個頁面；私有 repo 要登入、而且連接過才看得到。
 
 ---
 
@@ -207,7 +201,7 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
 
 ## 7. 發布與 README 徽章
 
-`/comprehend` 考完問你要不要發布，選「要」之後：
+`/kenmap:comprehend` 考完問你要不要發布，選「要」之後：
 
 1. KenMap 建立（或找到）一個叫 `kenmap-data` 的 git 分支。**這個分支跟你的程式碼沒有共同的歷史**（術語叫 orphan branch），所以測驗紀錄不會混進你平常的開發歷史裡，你的 commit log 看起來完全不受影響。
 2. 測驗紀錄、算好的報告、徽章用的資料，一起被推到這個分支。
@@ -215,11 +209,13 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
 
 ### 把徽章放進 README
 
-發布過至少一次之後，在你的 README 貼這行（記得換成你自己的帳號和 repo 名稱）：
+發布過至少一次之後，在你的 README 貼這行（記得換成你自己的帳號和 repo 名稱），點徽章就會打開這個 repo 的地圖：
 
 ```markdown
-![comprehension](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/<你的帳號>/<repo>/kenmap-data/badge.json)
+[![comprehension](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/<你的帳號>/<repo>/kenmap-data/badge.json)](https://kenmap.noky.dev/?repo=<你的帳號>/<repo>)
 ```
+
+更省事的做法：在網站的 repo 列表按「Copy README snippet」，會直接複製好這一行。徽章只適用公開 repo，shields.io 讀不到私有 repo。
 
 徽章顯示的百分比就是總分，顏色規則：
 
@@ -234,12 +230,12 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
 
 ---
 
-## 8. 清除 KenMap 的所有資料：`/comprehend reset`
+## 8. 清除 KenMap 的所有資料：`/kenmap:comprehend reset`
 
 想在某個 repo 完全重新來過（例如模組邊界談得不理想，想整個重談），打：
 
 ```
-/comprehend reset
+/kenmap:comprehend reset
 ```
 
 ### 會發生的事
@@ -248,7 +244,7 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
    `.kenmap.json`、本機的 `.kenmap-data/` 工作目錄、本機的 `kenmap-data`
    分支、以及 `origin` 上有沒有推過的 `kenmap-data` 分支。
 2. **KenMap 會把找到的東西分成兩種風險等級講給你聽：**
-   - **本機的**（設定檔、工作目錄、本機分支）——之後跑 `/comprehend init`
+   - **本機的**（設定檔、工作目錄、本機分支）——之後跑 `/kenmap:comprehend init`
      加上重新考幾題就能完全復原，刪掉沒什麼好擔心的。
    - **已經推上 `origin` 的分支**——這代表你的測驗紀錄已經在真實的 GitHub
      repo 上，**其他有權限看這個 repo 的人也看得到**。這不是靠本機操作
@@ -257,7 +253,7 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
    不會因為你答應清本機，就順便把遠端也刪掉**，這兩個永遠是兩個獨立的
    決定。
 4. 清完之後，這個 repo 對 KenMap 來說就像從沒被測量過。想重新開始，跑
-   `/comprehend init` 就好。
+   `/kenmap:comprehend init` 就好。
 
 ### 各自實際刪了什麼
 
@@ -270,42 +266,46 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
 
 ## 9. 不透過 skill，直接下指令
 
-平常用 `/comprehend` 就夠了，以下是給想手動操作、或想確認某個環節有沒有正確執行的人看的。所有指令都要先 `cd` 到你要測量的那個 repo 底下再執行。
+平常用 `/kenmap:comprehend` 就夠了，以下是給想手動操作、或想確認某個環節有沒有正確執行的人看的。所有指令都要先 `cd` 到你要測量的那個 repo 底下再執行。
+
+表裡的 `$KENMAP` 代表 KenMap 程式所在的資料夾：plugin 裝在 `~/.claude/plugins/cache/noky/kenmap/<版本>/`，或是你自己 clone 下來的 repo。
 
 | 指令 | 做什麼 |
 |---|---|
-| `node ~/.claude/skills/comprehend/scripts/structure.mjs --compact` | 用一行一個目錄的精簡格式印出這個 repo 的結構；`/comprehend init` 背後跑的就是這個。不加 `--compact` 會印出完整 JSON |
-| `node ~/.claude/skills/comprehend/scripts/prepare.mjs [模組或路徑]` | 出題前的準備：決定要考哪個模組，並印出那個模組的程式碼和之前問過的題目 |
-| `node ~/.claude/skills/comprehend/scripts/scan.mjs` | 把上面的探測結果對照 `.kenmap.json`，算出每個模組實際歸類到哪些檔案、模組之間的連線 |
-| `node ~/.claude/skills/comprehend/scripts/scan.mjs --resolve "<路徑或模組id>"` | 查一個檔案/資料夾路徑屬於哪個模組 |
-| `node ~/.claude/skills/comprehend/scripts/write-config.mjs --json '<設定 JSON>'` | 手動寫入 `.kenmap.json`（會先驗證，配不到檔案的模組會被拒絕）；加 `--dry-run` 只驗證並回報每個模組的行數，不寫檔 |
-| `node ~/.claude/skills/comprehend/scripts/record.mjs --module <id> --score <0/0.25/0.5/0.75/1> --question "<題目>" --answer "<回答>" --rationale "<理由>"` | 手動寫入一筆測驗紀錄；加 `--render` 會順便重算分數、產生地圖並打開 |
-| `node ~/.claude/skills/comprehend/scripts/report.mjs` | 重新計算所有模組的分數，同時更新 `report.json` 和 `badge.json` |
-| `node ~/.claude/skills/comprehend/scripts/render.mjs` | 用最新分數重新產生地圖頁面並打開瀏覽器；加 `--no-open` 只產生檔案不開瀏覽器 |
-| `node ~/.claude/skills/comprehend/scripts/publish.mjs` | 推送到 `kenmap-data` 分支；加 `--no-push` 只在本機 commit、不真的推送 |
-| `node ~/.claude/skills/comprehend/scripts/reset.mjs` | 只回報現況，不刪任何東西 |
-| `node ~/.claude/skills/comprehend/scripts/reset.mjs --local` | 清掉 `.kenmap.json`、本機工作目錄、本機分支 |
-| `node ~/.claude/skills/comprehend/scripts/reset.mjs --remote` | 刪掉 `origin` 上的 `kenmap-data` 分支 |
+| `node $KENMAP/comprehend/scripts/structure.mjs --compact` | 用一行一個目錄的精簡格式印出這個 repo 的結構；`/kenmap:comprehend init` 背後跑的就是這個。不加 `--compact` 會印出完整 JSON |
+| `node $KENMAP/comprehend/scripts/prepare.mjs [模組或路徑]` | 出題前的準備：決定要考哪個模組，並印出那個模組的程式碼和之前問過的題目 |
+| `node $KENMAP/comprehend/scripts/scan.mjs` | 把上面的探測結果對照 `.kenmap.json`，算出每個模組實際歸類到哪些檔案、模組之間的連線 |
+| `node $KENMAP/comprehend/scripts/scan.mjs --resolve "<路徑或模組id>"` | 查一個檔案/資料夾路徑屬於哪個模組 |
+| `node $KENMAP/comprehend/scripts/write-config.mjs --json '<設定 JSON>'` | 手動寫入 `.kenmap.json`（會先驗證，配不到檔案的模組會被拒絕）；加 `--dry-run` 只驗證並回報每個模組的行數，不寫檔 |
+| `node $KENMAP/comprehend/scripts/record.mjs --module <id> --score <0/0.25/0.5/0.75/1> --question "<題目>" --answer "<回答>" --rationale "<理由>"` | 手動寫入一筆測驗紀錄；加 `--render` 會順便重算分數、產生地圖並打開 |
+| `node $KENMAP/comprehend/scripts/report.mjs` | 重新計算所有模組的分數，同時更新 `report.json` 和 `badge.json` |
+| `node $KENMAP/comprehend/scripts/render.mjs` | 用最新分數重新產生地圖頁面並打開瀏覽器；加 `--no-open` 只產生檔案不開瀏覽器 |
+| `node $KENMAP/comprehend/scripts/publish.mjs` | 推送到 `kenmap-data` 分支；加 `--no-push` 只在本機 commit、不真的推送 |
+| `node $KENMAP/comprehend/scripts/reset.mjs` | 只回報現況，不刪任何東西 |
+| `node $KENMAP/comprehend/scripts/reset.mjs --local` | 清掉 `.kenmap.json`、本機工作目錄、本機分支 |
+| `node $KENMAP/comprehend/scripts/reset.mjs --remote` | 刪掉 `origin` 上的 `kenmap-data` 分支 |
 
 ---
 
 ## 10. 疑難排解
 
-**打完 `/comprehend init`，模組建議看起來很奇怪。** 直接用對話跟它說哪裡不對——它是根據探測結果做判斷，不是固定規則，可以隨時調整。
+**打完 `/kenmap:comprehend init`，模組建議看起來很奇怪。** 直接用對話跟它說哪裡不對——它是根據探測結果做判斷，不是固定規則，可以隨時調整。
 
-**打了指令沒有任何反應，也沒有錯誤訊息。** 如果你是照手冊用 `ln -s` 裝的（幾乎一定是），有可能是舊版本的問題：早期版本判斷「我是不是被直接執行」的寫法在路徑經過 symlink 時會失效，導致指令整個沒有執行、但也不會報錯。跑一次 `git -C ~/dev/kenmap pull` 更新到最新版就會修好。修好之後，每次執行都會印出一行可以直接點的網址（`file://` 開頭），不用再猜有沒有成功。
+**打 `/kenmap:comprehend` 說找不到指令。** 確認 plugin 有裝好而且是啟用的：打 `/plugin`，在 Installed 分頁找 `kenmap`。剛裝好的話，開一個新對話再試。
+
+**同時出現 `/comprehend` 和 `/kenmap:comprehend`。** 你之前用 symlink 裝過舊版，照[第 1 節](#從舊的安裝方式symlink換過來)刪掉舊的捷徑。
 
 **跑完指令，瀏覽器畫面看起來沒變。** 每次重新產生的都是**同一個檔案**（覆蓋，不是新建）。如果瀏覽器已經開著一個分頁指向這個檔案，作業系統有時只會切換過去那個舊分頁，不一定會自動重新整理內容。找到那個分頁，手動按重新整理（Cmd+R / Ctrl+R），或直接點終端機印出來的那行網址開新分頁。
 
 **題目下面多了一行「有未 commit 的變更」。** 代表你正在考的這個模組裡有還沒 commit 的改動。分數是綁在目前的 commit 上，所以這題量的是 commit 過的版本；想讓分數涵蓋新的改動，先 commit 再考。
 
-**某個模組一直是 0 分。** 兩種可能：還沒答滿 3 題（圓圈顯示「—」或「1/3」「2/3」），或答滿了但答得不好（顯示「0%」）。沒指定模組直接打 `/comprehend` 的話，KenMap 會優先接著考答到一半的模組。
+**某個模組一直是 0 分。** 兩種可能：還沒答滿 3 題（圓圈顯示「—」或「1/3」「2/3」），或答滿了但答得不好（顯示「0%」）。沒指定模組直接打 `/kenmap:comprehend` 的話，KenMap 會優先接著考答到一半的模組。
 
 **改寫了程式碼，分數卻沒有下降。** 檢查改動有沒有真的 commit——churn 是拿「考試當下的 commit」跟「現在的 HEAD」比對，沒 commit 的改動看不到。另外要重新跑一次讓地圖重新產生（見上面「瀏覽器畫面沒變」）。
 
 **某筆紀錄的 churn 顯示「無法驗證」。** 代表當初考試那個 commit，在 git 歷史裡已經找不到了（通常是因為 squash merge 或 rebase）。這不是錯誤——分數還是會用你的原始作答分數，只是這部分的扣分沒辦法精確計算。
 
-**`?repo=owner/name` 打開網站沒有資料。** 確認這個 repo 有沒有真的執行過發布（第 7 節）。網站只能讀公開 repo，而且發布後可能要等一下子快取才會更新。
+**網站上看不到某個 repo 的分數。** 確認這個 repo 有沒有真的執行過發布（第 7 節）。私有 repo 要先登入、並且在「Connect a repository」裡選到它；沒登入時網站只讀得到公開 repo。
 
 ---
 
@@ -313,6 +313,4 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
 
 - **只支援 Dart 的 import 連線。** 其他語言一樣能正常算分、正常使用，只是地圖上不會畫連線。
 - **改模組 id 會讓舊紀錄失聯。** 想重新命名模組，紀錄不會自動搬過去。
-- **遠端網站模式還沒有正式架設。** 目前只能用本地模式，或者自己找地方 host `web/index.html`。
-- **不支援私有 repo 的遠端模式。** 遠端模式是瀏覽器直接呼叫未登入的 GitHub API，讀不到私有 repo 的內容。
 - **`打開瀏覽器` 這個動作在 Windows 上還沒接。** macOS 和 Linux 沒問題。

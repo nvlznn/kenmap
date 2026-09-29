@@ -1,6 +1,6 @@
 ---
 name: comprehend
-description: Quiz yourself on one module of this repo and record how well you still understand it. Use when the user runs /comprehend, asks to be quizzed on code they own, asks how much of their codebase they still understand, or wants to set up, update or wipe KenMap module boundaries and data.
+description: Quiz yourself on one module of this repo and record how well you still understand it. Use when the user runs /kenmap:comprehend, asks to be quizzed on code they own, asks how much of their codebase they still understand, or wants to set up, update or wipe KenMap module boundaries and data.
 ---
 
 # comprehend
@@ -22,14 +22,14 @@ description: Quiz yourself on one module of this repo and record how well you st
 
 ## 用法
 
-- `/comprehend` — 自動選模組，考你最不熟的部分
-- `/comprehend <模組 id 或檔案／資料夾路徑>` — 考指定模組
-- `/comprehend init` — 設定或調整模組邊界
-- `/comprehend web` — 打開地圖，並顯示連結
-- `/comprehend reset` — 清除這個 repo 裡 KenMap 的資料
-- `/comprehend help` — 顯示所有指令
+- `/kenmap:comprehend` — 自動選模組，考你最不熟的部分
+- `/kenmap:comprehend <模組 id 或檔案／資料夾路徑>` — 考指定模組
+- `/kenmap:comprehend init` — 設定或調整模組邊界
+- `/kenmap:comprehend web` — 打開地圖，並顯示連結
+- `/kenmap:comprehend reset` — 清除這個 repo 裡 KenMap 的資料
+- `/kenmap:comprehend help` — 顯示所有指令
 
-`init`、`web`、`reset`、`help` 是指令，不會被當成模組。`.kenmap.json` 不存在時：`help` 照常回答；`web` 回「這個 repo 還沒設定，先跑 `/comprehend init`。」；其他一律先走 init。
+`init`、`web`、`reset`、`help` 是指令，不會被當成模組。`.kenmap.json` 不存在時：`help` 照常回答；`web` 回「這個 repo 還沒設定，先跑 `/kenmap:comprehend init`。」；其他一律先走 init。
 
 ## 出題（全程只有兩次指令呼叫）
 
@@ -67,9 +67,9 @@ description: Quiz yourself on one module of this repo and record how well you st
    `moduleBefore`、`totalBefore`、`totalAfter` 是 `null` 就寫「還沒有分數」。`moduleAfter` 是 `null` 就寫「已答 <answers>/<required>，還差 <required − answers> 題」。表格下面一定加一行「地圖：<map>」，讓使用者自己決定要不要點開。
 
    「接下來」依情況：
-   - 這個模組還沒答滿：`` `/comprehend` 繼續考 <模組 id>（還差 N 題） · `/comprehend help` 看所有指令 ``
-   - 已經有分數：`` `/comprehend` 再考一題 · 說「發布」把紀錄推到 GitHub 的 `kenmap-data` 分支 · `/comprehend help` 看所有指令 ``
-5. 使用者說「發布」→ `node scripts/publish.mjs`，回一句結果，最後一行：`` 接下來：`/comprehend` 再考一題 · `/comprehend help` 看所有指令 ``
+   - 這個模組還沒答滿：`` `/kenmap:comprehend` 繼續考 <模組 id>（還差 N 題） · `/kenmap:comprehend help` 看所有指令 ``
+   - 已經有分數：`` `/kenmap:comprehend` 再考一題 · 說「發布」把紀錄推到 GitHub 的 `kenmap-data` 分支 · `/kenmap:comprehend help` 看所有指令 ``
+5. 使用者說「發布」→ `node scripts/publish.mjs`，回一句結果，最後一行：`` 接下來：`/kenmap:comprehend` 再考一題 · `/kenmap:comprehend help` 看所有指令 ``
 
 ### 題型
 
@@ -169,7 +169,7 @@ description: Quiz yourself on one module of this repo and record how well you st
 5. 使用者要調整就改，重跑第 3 步，回覆更新後的完整表格。
 6. 確認後執行 `node scripts/write-config.mjs --json '<設定>'`。設定格式 `{"version":1,"user":"<GitHub 帳號>","modules":{"<id>":["<glob>"]}}`，glob 相對 repo 根目錄；有模組配不到檔案它會拒絕。
 7. 問一句：「要把 `.kenmap.json` commit，並把 `.kenmap-data/` 加進 `.gitignore` 嗎？」這兩件都會動到 main 分支，要使用者答應才做。
-8. 做完（或使用者說不要）之後回一句結果，最後一行：`` 接下來：`/comprehend` 考第一題 · `/comprehend help` 看所有指令 ``
+8. 做完（或使用者說不要）之後回一句結果，最後一行：`` 接下來：`/kenmap:comprehend` 考第一題 · `/kenmap:comprehend help` 看所有指令 ``
 
 **重跑 init**：不要直接覆蓋。執行 `node scripts/scan.mjs`，用 `| 模組 | 包含 | 行數 | 檔案 |` 表格列出現有模組，問要保留、調整還是重來，並提醒改掉模組 id 會讓那個模組的舊紀錄失聯。
 
@@ -179,7 +179,7 @@ description: Quiz yourself on one module of this repo and record how well you st
 
 ```
 地圖：<連結>
-接下來：`/comprehend` 考一題 · `/comprehend help` 看所有指令
+接下來：`/kenmap:comprehend` 考一題 · `/kenmap:comprehend help` 看所有指令
 ```
 
 ## help
@@ -189,12 +189,12 @@ description: Quiz yourself on one module of this repo and record how well you st
 ```
 | 指令 | 做什麼 |
 |---|---|
-| `/comprehend` | 自動選模組，考你最不熟的部分 |
-| `/comprehend <模組 id 或路徑>` | 考指定的模組，路徑可以是檔案或資料夾 |
-| `/comprehend init` | 設定或調整模組邊界 |
-| `/comprehend web` | 打開地圖，並顯示連結 |
-| `/comprehend reset` | 清除這個 repo 裡 KenMap 的資料 |
-| `/comprehend help` | 顯示這張表 |
+| `/kenmap:comprehend` | 自動選模組，考你最不熟的部分 |
+| `/kenmap:comprehend <模組 id 或路徑>` | 考指定的模組，路徑可以是檔案或資料夾 |
+| `/kenmap:comprehend init` | 設定或調整模組邊界 |
+| `/kenmap:comprehend web` | 打開地圖，並顯示連結 |
+| `/kenmap:comprehend reset` | 清除這個 repo 裡 KenMap 的資料 |
+| `/kenmap:comprehend help` | 顯示這張表 |
 
 考完一題之後回覆「發布」，會把作答紀錄推到 GitHub 上獨立的 `kenmap-data` 分支，不會動到 main。
 ```
@@ -214,7 +214,7 @@ description: Quiz yourself on one module of this repo and record how well you st
    ```
    接著**分開**問：「清除本機資料嗎？」；只有 `remoteBranch` 為 true 時再問：「也刪除 GitHub 上的紀錄嗎？」
 3. 只執行使用者答應的：`--local`、`--remote`，或兩個都加。**絕不因為使用者答應清本機，就順便加 `--remote`。**
-4. 依輸出的 `removed` 回一句實際刪了什麼，最後一行：`` 接下來：`/comprehend init` 重新設定 · `/comprehend help` 看所有指令 ``
+4. 依輸出的 `removed` 回一句實際刪了什麼，最後一行：`` 接下來：`/kenmap:comprehend init` 重新設定 · `/kenmap:comprehend help` 看所有指令 ``
 
 ## 分數怎麼算（使用者問才講）
 

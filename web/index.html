@@ -342,7 +342,7 @@
   <div><h3>Size</h3><p>Lines of code. Arcs underneath are imports between modules — click a module to follow them.</p></div>
   <div><h3>Fading</h3><p id="howFading">A module needs 3 answers before it gets a score. Scores never drop with time — only when the code you answered about changes.</p></div>
 </section>
-<footer class="mono"><span>KenMap</span><span>(Run /comprehend in your repo to answer a question)</span></footer>
+<footer class="mono"><span>KenMap</span><span>(Run /kenmap:comprehend in your repo to answer a question)</span></footer>
 
 <div class="toast mono" id="toast" role="status"><span id="toastText"></span><button class="cta" type="button" id="toastOk">OK</button></div>
 
@@ -566,7 +566,7 @@ function render(report) {
 
   const host = document.getElementById('graph');
   if (!report.modules.length) {
-    host.innerHTML = '<div class="empty">No modules configured yet — run /comprehend init</div>';
+    host.innerHTML = '<div class="empty">No modules configured yet — run /kenmap:comprehend init</div>';
     return;
   }
 
@@ -742,7 +742,7 @@ function showModule(module, required) {
     `<div class="big"><b>${module.scored ? pctOf(module.score) + '%' : `${module.answers}/${required}`}</b><small>${module.scored ? 'understood' : 'answers'}</small></div>`
     + rows(list)
     + `<div class="answers">${answers || '<p class="hint">No answers yet.</p>'}</div>`
-    + `<p class="hint">Quiz it with <code>/comprehend ${escapeHtml(module.id)}</code></p>`);
+    + `<p class="hint">Quiz it with <code>/kenmap:comprehend ${escapeHtml(module.id)}</code></p>`);
 }
 
 function escapeHtml(s) {
@@ -790,7 +790,7 @@ function renderNav(view, me) {
   };
   document.getElementById('nav').innerHTML = items[view];
   document.getElementById('copy')?.addEventListener('click', () =>
-    copy('/comprehend', 'Copied /comprehend — paste it into Claude Code'));
+    copy('/kenmap:comprehend', 'Copied /kenmap:comprehend — paste it into Claude Code'));
   document.getElementById('signOut')?.addEventListener('click', async () => {
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
     location.href = '/';
@@ -852,7 +852,7 @@ async function loadRepos(me) {
     if (!r.hasData) {
       return `<tr><td>${name}</td><td colspan="4" class="hint" style="margin:0">${r.unreadable
         ? 'Could not read this repo’s report.'
-        : 'No report yet — run <code>/comprehend</code> in this repo, then say 「發布」 to publish.'}</td></tr>`;
+        : 'No report yet — run <code>/kenmap:comprehend</code> in this repo, then say 「發布」 to publish.'}</td></tr>`;
     }
     const score = r.total === null
       ? '<span class="score"><i style="background:' + colorFor(0) + '"></i><b>—</b></span>'

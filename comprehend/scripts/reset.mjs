@@ -37,7 +37,7 @@ export async function status(cwd) {
 
 /**
  * `local` removes the config file, the worktree and the local branch — all
- * of it reversible by running /comprehend init again. `remote` deletes the
+ * of it reversible by running /kenmap:comprehend init again. `remote` deletes the
  * branch on origin and must be requested on its own: never inferred from
  * `local`, never defaulted to true. This mirrors deleting nothing unless
  * explicitly told to, at each of the three tiers.

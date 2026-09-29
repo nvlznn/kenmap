@@ -1,0 +1,13 @@
+{
+  "name": "noky",
+  "description": "Plugins by Noky.",
+  "owner": { "name": "Ino", "url": "https://github.com/nvlznn" },
+  "plugins": [
+    {
+      "name": "kenmap",
+      "source": ".",
+      "description": "Quizzes you on your own repo and maps how much of it you still understand.",
+      "category": "productivity"
+    }
+  ]
+}
