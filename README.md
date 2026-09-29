@@ -38,7 +38,7 @@ ln -s "$PWD/comprehend" ~/.claude/skills/comprehend
 
 ```
 /comprehend init                    # 探測結構，談定模組邊界
-/comprehend                         # 針對分數最低的模組回答一題
+/comprehend                         # 自動選模組，考你最不熟的部分
 /comprehend <module id>             # 指定模組，用 init 談定的 id
 /comprehend <file or folder path>   # 指定模組，直接給路徑也行，不用背 id
 /comprehend web                     # 打開地圖，並顯示連結

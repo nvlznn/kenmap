@@ -4,100 +4,377 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KenMap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Old+Standard+TT:wght@400;700&family=Courier+Prime:wght@400;700&family=Inter+Tight:wght@400;500;600&display=swap">
 <style>
   :root {
-    --bg: #1c1d20; --panel: #222327; --ink: #e8e8e6; --muted: #9a9da3;
-    --line: #313338; --edge: #7d8188; --edge-hi: #d6d8dc; --node-ink: #18191b;
+    --paper: #ffffff; --ink: #0a0a0a; --muted: #767676; --faint: #a8a8a8;
+    --rule: #e5e5e5; --ghost: #efefef; --wash: #f6f6f6;
+    --display: "Old Standard TT", "Times New Roman", serif;
+    --mono: "Courier Prime", "Courier New", ui-monospace, monospace;
+    --sans: "Inter Tight", ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+    --gutter: 20px;
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; }
+  html { scroll-behavior: smooth; }
   body {
-    margin: 0; display: flex; flex-direction: column;
-    background: var(--bg); color: var(--ink);
-    font: 14px/1.5 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 14px/1.5 var(--sans); -webkit-font-smoothing: antialiased;
   }
-  header {
-    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
-    padding: 14px 24px; border-bottom: 1px solid var(--line);
-  }
-  h1 { font-size: 16px; margin: 0; letter-spacing: -.01em; }
-  h1 span { color: var(--muted); font-weight: 400; }
-  .legend { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
-  .legend .bar { width: 140px; height: 8px; border-radius: 4px; }
-  .total { margin-left: auto; text-align: right; font-size: 26px; font-weight: 600; letter-spacing: -.02em; }
-  .total small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
-  main { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 320px; }
-  @media (max-width: 760px) {
-    main { grid-template-columns: 1fr; }
-    aside { border-left: none !important; border-top: 1px solid var(--line); }
-  }
-  #graph { min-height: 480px; }
-  svg { width: 100%; height: 100%; display: block; }
+  ::selection { background: var(--ink); color: var(--paper); }
+  a { color: inherit; }
+  .mono { font-family: var(--mono); text-transform: uppercase; letter-spacing: .02em; }
+  .defs { position: absolute; width: 0; height: 0; }
 
-  .edge path, .edge line { fill: none; stroke: var(--edge); stroke-width: 1; }
+  /* ── top bar ─────────────────────────────────────────── */
+  .bar {
+    position: sticky; top: 0; z-index: 10;
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px;
+    padding: 14px var(--gutter); background: color-mix(in srgb, var(--paper) 70%, transparent);
+    backdrop-filter: blur(6px); border-bottom: 1px solid var(--rule);
+  }
+  .wordmark { display: block; line-height: 0; color: var(--ink); }
+  .wordmark svg { height: 21px; width: auto; shape-rendering: crispEdges; }
+  .status { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .status::before { content: "◆"; margin-right: 8px; font-size: 13px; }
+  .bar nav { display: flex; justify-content: flex-end; align-items: center; gap: 18px; font-size: 14px; }
+  .bar nav a { text-decoration: none; }
+  .bar nav a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .cta {
+    font: 600 14px/1 var(--sans); letter-spacing: -.01em; color: var(--paper); background: var(--ink);
+    border: 0; border-radius: 4px; padding: 9px 12px; cursor: pointer; white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .35); transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .cta:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0, 0, 0, .35); }
+  .cta:active { transform: translateY(0); }
+  @media (max-width: 760px) {
+    .bar { grid-template-columns: 1fr auto; }
+    .status, .bar nav a { display: none; }
+  }
+
+  /* ── hero ────────────────────────────────────────────── */
+  .hero {
+    position: relative; overflow: hidden; min-height: min(78vh, 720px);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 72px var(--gutter) 120px;
+  }
+  /* The maze that grows behind the page, like the template's. */
+  #maze {
+    position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none;
+    -webkit-mask-image: radial-gradient(ellipse 60% 55% at 50% 42%, rgba(0,0,0,.25), #000 75%);
+    mask-image: radial-gradient(ellipse 60% 55% at 50% 42%, rgba(0,0,0,.25), #000 75%);
+  }
+  .display {
+    position: relative; margin: 0; text-align: center; font-family: var(--display); font-weight: 700;
+    text-transform: uppercase; line-height: .9; letter-spacing: -.01em;
+    transform: scaleX(.78); width: 128%; /* condensed, the way a pixel serif is */
+  }
+  .display .title { font-size: clamp(84px, 21vw, 300px); margin-bottom: .12em; }
+  .display .slogan { font-size: clamp(26px, 5.4vw, 78px); line-height: .95; }
+  /* The one word that has faded. Hover it (or tap it) and it comes back into focus. */
+  .fuzzy { display: inline-block; filter: blur(.05em); transition: filter .6s ease; outline: none; }
+  .fuzzy:hover, .fuzzy:focus { filter: blur(0); }
+  .display .line {
+    display: block; filter: url(#px) blur(calc(var(--blur, 0px) + var(--in)));
+    overflow-wrap: anywhere; animation: focus 1.4s cubic-bezier(.2, .7, .2, 1) both;
+    animation-delay: calc(var(--i) * 90ms);
+  }
+  @media (max-width: 760px) { .display .line { filter: url(#px-sm) blur(calc(var(--blur, 0px) + var(--in))); } }
+  /* Registered so the blur can animate: text comes into focus as the page loads. */
+  @property --in { syntax: "<length>"; inherits: false; initial-value: 0px; }
+  @keyframes focus { from { opacity: 0; --in: 16px; } }
+  .credits {
+    position: absolute; left: 0; right: 0; bottom: 28px;
+    display: flex; justify-content: center; align-items: center; gap: 14px; font-size: 12px; line-height: 1.15;
+  }
+  .credits div:first-child { text-align: right; }
+  .credits b { font-weight: 700; }
+  .seal { width: 34px; height: 34px; flex: none; }
+  .hero-foot {
+    position: absolute; left: var(--gutter); right: var(--gutter); bottom: 24px;
+    display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none;
+  }
+  .scroll { font-size: 12px; color: var(--muted); }
+  @media (max-width: 760px) { .hero-foot { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .display .line { animation: none; } html { scroll-behavior: auto; } }
+
+  /* ── sections ────────────────────────────────────────── */
+  .section-head {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 14px var(--gutter); border-top: 1px solid var(--ink); border-bottom: 1px solid var(--rule);
+    font-size: 14px;
+  }
+  .legend { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+  .steps { display: flex; gap: 2px; }
+  .steps i { width: 14px; height: 10px; display: block; }
+
+  main { display: grid; grid-template-columns: 1fr 340px; min-height: 620px; }
+  #graph { position: relative; min-height: 560px; overflow: hidden; }
+  #graph > svg.map { position: relative; width: 100%; height: 100%; min-height: 560px; display: block; }
+  @media (max-width: 860px) {
+    main { grid-template-columns: 1fr; }
+    #graph { overflow-x: auto; }
+    #graph > svg.map { min-width: 760px; }
+    aside { border-left: none !important; border-top: 1px solid var(--rule); }
+  }
+
+  .edge path, .edge line { fill: none; stroke: var(--ink); stroke-width: .9; }
+  .edge.contains line { stroke-dasharray: 2 3; }
   .edge text {
-    font-size: 8.5px; letter-spacing: .06em; fill: var(--muted);
-    paint-order: stroke; stroke: var(--bg); stroke-width: 3px;
+    font: 700 8px var(--mono); letter-spacing: .08em; fill: var(--muted);
+    paint-order: stroke; stroke: var(--paper); stroke-width: 3px;
   }
   .edge.imports text { opacity: 0; }
-  .edge.active path, .edge.active line { stroke: var(--edge-hi); }
-  .edge.active text { opacity: 1; fill: var(--edge-hi); }
+  .edge.active path, .edge.active line { stroke-width: 1.6; }
+  .edge.active text { opacity: 1; fill: var(--ink); }
   .edge.active.fwd path, .edge.active.fwd line { marker-end: url(#arrow-hi); }
   .edge.active.bwd path { marker-start: url(#arrow-hi); }
-  .dimmed .edge:not(.active) { opacity: .1 !important; }
+  .dimmed .edge:not(.active) { opacity: .08 !important; }
   .edge.active { opacity: 1 !important; }
-  .dimmed .node:not(.active) { opacity: .35; }
+  .dimmed .node:not(.active) { opacity: .28; }
+  .edge, .node { transition: opacity .18s ease; }
 
   .node { cursor: pointer; }
-  .node circle { transition: filter .12s ease; }
-  .node:hover circle { filter: brightness(1.08); }
-  .node.selected circle { stroke: #fff; stroke-width: 2.5; }
-  .node text { fill: var(--node-ink); font-size: 12px; font-weight: 500; pointer-events: none; }
-  .node text.pct { font-size: 10px; font-weight: 600; opacity: .8; }
+  .node .disc { transition: transform .15s ease; }
+  .node:hover .disc { transform: translate(-1.5px, -1.5px); }
+  .node path { shape-rendering: crispEdges; }
+  .node .ring { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 3 3; opacity: 0; }
+  .node.selected .ring { opacity: 1; animation: spin 14s linear infinite; }
+  @keyframes spin { to { stroke-dashoffset: -60; } }
+  .node text { fill: var(--ink); font: 600 11.5px var(--sans); letter-spacing: -.01em; pointer-events: none; }
+  .node text.pct { font: 700 10px var(--mono); letter-spacing: .04em; }
+  .node.root text { font: 700 13px var(--display); letter-spacing: .06em; text-transform: uppercase; }
 
-  aside { border-left: 1px solid var(--line); padding: 20px; background: var(--panel); overflow-y: auto; }
-  aside h2 { font-size: 15px; margin: 0 0 4px; word-break: break-word; }
-  .hint { color: var(--muted); font-size: 13px; }
-  .row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
-  .row span:first-child { color: var(--muted); }
-  .answers { margin-top: 18px; }
-  .answer { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; }
+  aside {
+    border-left: 1px solid var(--rule); padding: 22px var(--gutter); overflow-y: auto;
+    background: color-mix(in srgb, var(--paper) 86%, transparent);
+  }
+  .section-head, .how, footer { background: color-mix(in srgb, var(--paper) 86%, transparent); }
+  .eyebrow { font-size: 12px; color: var(--muted); margin: 0 0 6px; }
+  aside h2 {
+    margin: 0 0 10px; font: 700 34px/1 var(--display); text-transform: uppercase; letter-spacing: -.01em;
+    word-break: break-word; filter: url(#px-sm);
+  }
+  .hint { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  .big { display: flex; align-items: baseline; gap: 10px; margin: 4px 0 14px; }
+  .big b { font: 700 64px/1 var(--display); letter-spacing: -.02em; filter: url(#px-sm); }
+  .big small { font: 12px var(--mono); text-transform: uppercase; color: var(--muted); letter-spacing: .02em; }
+  .row {
+    display: flex; justify-content: space-between; gap: 12px; padding: 8px 0;
+    border-bottom: 1px solid var(--rule); font-size: 13px;
+  }
+  .row span:first-child { font: 12px var(--mono); text-transform: uppercase; color: var(--muted); }
+  .row span:last-child { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .answers { margin: 20px 0 14px; display: grid; gap: 8px; }
+  .answer { border: 1px solid var(--rule); border-radius: 4px; padding: 10px 12px; font-size: 13px; background: var(--paper); }
+  .answer .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .answer .when { font: 11px var(--mono); text-transform: uppercase; color: var(--muted); }
   .answer b { font-weight: 600; }
   .answer p { margin: 6px 0 0; color: var(--muted); }
-  code { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; font-size: 12px; }
-  .warn { margin: 12px 24px 0; padding: 10px 12px; border-radius: 8px; font-size: 13px;
-          background: #3a3000; color: #f0dda0; border: 1px solid #5c4d00; }
-  .empty { padding: 48px 24px; color: var(--muted); }
+  code {
+    font: 12px var(--mono); background: var(--wash); border: 1px solid var(--rule);
+    border-radius: 4px; padding: 2px 6px;
+  }
+  .warn {
+    margin: 0; padding: 10px var(--gutter); font: 13px var(--mono); text-transform: uppercase;
+    background: var(--ink); color: var(--paper);
+  }
+  .warn::before { content: "▲ "; }
+  .empty {
+    position: absolute; inset: 0; display: grid; place-items: center; padding: 48px var(--gutter);
+    text-align: center; color: var(--muted); font: 14px var(--mono); text-transform: uppercase;
+  }
+
+  /* ── how to read ─────────────────────────────────────── */
+  .how { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--rule); }
+  .how div { padding: 22px var(--gutter) 28px; border-right: 1px solid var(--rule); }
+  .how div:last-child { border-right: 0; }
+  .how h3 { margin: 0 0 8px; font: 700 26px/1 var(--display); text-transform: uppercase; filter: url(#px-sm); }
+  .how p { margin: 0; color: var(--muted); max-width: 36ch; }
+  @media (max-width: 760px) {
+    .how { grid-template-columns: 1fr; }
+    .how div { border-right: 0; border-bottom: 1px solid var(--rule); }
+  }
+  footer {
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    padding: 18px var(--gutter) 28px; font-size: 12px; color: var(--muted);
+  }
+  .toast {
+    position: fixed; right: var(--gutter); bottom: var(--gutter); z-index: 20;
+    display: flex; align-items: center; gap: 14px; padding: 8px 8px 8px 14px;
+    background: #ececec; font-size: 13px; transform: translateY(140%); transition: transform .25s ease;
+  }
+  .toast.show { transform: none; }
+  .toast .cta { padding: 7px 10px; }
 </style>
 </head>
 <body>
-<header>
-  <h1 id="repo">KenMap <span>— comprehension map</span></h1>
-  <div class="legend"><span>0%</span><div class="bar" id="legendBar"></div><span>100%</span><span>· a module needs 3 answers before it gets a score, and counts as 0% until then</span></div>
-  <div class="total"><span id="total">—</span><small id="totalNote">no answers recorded yet</small></div>
+<!--
+  Pixelation: keep a 2px sample from each cell, then grow it to fill the
+  cell. The sample is 2px, not 1px, because a 1px sample can land between
+  screen pixels on a fractional offset and the text vanishes.
+-->
+<svg class="defs" aria-hidden="true">
+  <filter id="px" x="0" y="0" width="100%" height="100%">
+    <feFlood x="1" y="1" width="2" height="2"></feFlood>
+    <feComposite width="4" height="4"></feComposite>
+    <feTile result="grid"></feTile>
+    <feComposite in="SourceGraphic" in2="grid" operator="in"></feComposite>
+    <feMorphology operator="dilate" radius="1"></feMorphology>
+  </filter>
+  <filter id="px-sm" x="0" y="0" width="100%" height="100%">
+    <feFlood x="0" y="0" width="2" height="2"></feFlood>
+    <feComposite width="3" height="3"></feComposite>
+    <feTile result="grid"></feTile>
+    <feComposite in="SourceGraphic" in2="grid" operator="in"></feComposite>
+    <feMorphology operator="dilate" radius="1"></feMorphology>
+  </filter>
+</svg>
+
+<header class="bar">
+  <a class="wordmark" href="#top" aria-label="KenMap"><svg viewBox="0 0 46 7" aria-hidden="true"><path fill="currentColor" d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM1 1h1v1h-1zM5 1h1v1h-1zM1 2h1v1h-1zM4 2h1v1h-1zM1 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM1 4h1v1h-1zM4 4h1v1h-1zM1 5h1v1h-1zM5 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM8 0h1v1h-1zM9 0h1v1h-1zM10 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM13 0h1v1h-1zM9 1h1v1h-1zM13 1h1v1h-1zM9 2h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM12 3h1v1h-1zM9 4h1v1h-1zM9 5h1v1h-1zM13 5h1v1h-1zM8 6h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM15 0h1v1h-1zM16 0h1v1h-1zM19 0h1v1h-1zM20 0h1v1h-1zM21 0h1v1h-1zM16 1h1v1h-1zM17 1h1v1h-1zM20 1h1v1h-1zM16 2h1v1h-1zM18 2h1v1h-1zM20 2h1v1h-1zM16 3h1v1h-1zM18 3h1v1h-1zM20 3h1v1h-1zM16 4h1v1h-1zM19 4h1v1h-1zM20 4h1v1h-1zM16 5h1v1h-1zM20 5h1v1h-1zM15 6h1v1h-1zM16 6h1v1h-1zM17 6h1v1h-1zM20 6h1v1h-1zM23 0h1v1h-1zM24 0h1v1h-1zM29 0h1v1h-1zM30 0h1v1h-1zM24 1h1v1h-1zM25 1h1v1h-1zM28 1h1v1h-1zM29 1h1v1h-1zM24 2h1v1h-1zM26 2h1v1h-1zM27 2h1v1h-1zM29 2h1v1h-1zM24 3h1v1h-1zM26 3h1v1h-1zM27 3h1v1h-1zM29 3h1v1h-1zM24 4h1v1h-1zM29 4h1v1h-1zM24 5h1v1h-1zM29 5h1v1h-1zM23 6h1v1h-1zM24 6h1v1h-1zM25 6h1v1h-1zM28 6h1v1h-1zM29 6h1v1h-1zM30 6h1v1h-1zM35 0h1v1h-1zM34 1h1v1h-1zM36 1h1v1h-1zM34 2h1v1h-1zM36 2h1v1h-1zM33 3h1v1h-1zM37 3h1v1h-1zM33 4h1v1h-1zM34 4h1v1h-1zM35 4h1v1h-1zM36 4h1v1h-1zM37 4h1v1h-1zM33 5h1v1h-1zM37 5h1v1h-1zM32 6h1v1h-1zM33 6h1v1h-1zM34 6h1v1h-1zM36 6h1v1h-1zM37 6h1v1h-1zM38 6h1v1h-1zM40 0h1v1h-1zM41 0h1v1h-1zM42 0h1v1h-1zM43 0h1v1h-1zM44 0h1v1h-1zM41 1h1v1h-1zM45 1h1v1h-1zM41 2h1v1h-1zM45 2h1v1h-1zM41 3h1v1h-1zM42 3h1v1h-1zM43 3h1v1h-1zM44 3h1v1h-1zM41 4h1v1h-1zM41 5h1v1h-1zM40 6h1v1h-1zM41 6h1v1h-1zM42 6h1v1h-1z"></path></svg></a>
+  <div class="status mono" id="status">(comprehension map)</div>
+  <nav class="mono">
+    <a href="#map">Map</a><a href="#how">How to read</a>
+    <button class="cta" id="copy" type="button">Quiz me →</button>
+  </nav>
 </header>
+
+<canvas id="maze" aria-hidden="true"></canvas>
+<section class="hero" id="top">
+  <h1 class="display">
+    <span class="line title" style="--i:0">KenMap</span>
+    <span class="line slogan" style="--i:1">How much of your code</span>
+    <span class="line slogan" style="--i:2">do you still <span class="fuzzy" tabindex="0">understand</span>?</span>
+  </h1>
+  <div class="credits mono">
+    <div id="creditLeft">Comprehension<br>map</div>
+    <svg class="seal" viewBox="0 0 34 34" aria-hidden="true">
+      <rect x="1" y="1" width="32" height="32" rx="7" fill="none" stroke="currentColor"></rect>
+      <path d="M9 9v16M9 17l8-8M11.5 15 17 25M21 25V9l4 7 4-7v16" fill="none" stroke="currentColor" stroke-width="1.4"></path>
+    </svg>
+    <div id="creditRight">Git is the<br>database</div>
+  </div>
+  <div class="hero-foot mono"><span class="scroll">(Scroll ↓)</span><span class="scroll" id="commit"></span></div>
+</section>
+
 <div id="warnings"></div>
+<div class="section-head mono" id="map">
+  <span>(01) The map</span>
+  <div class="legend"><span>0%</span><div class="steps" id="legendSteps"></div><span>100%</span></div>
+</div>
 <main>
   <div id="graph"></div>
   <aside>
+    <p class="eyebrow mono" id="panelEyebrow">(Nothing selected)</p>
     <h2 id="panelTitle">Pick a module</h2>
-    <p class="hint" id="panelHint">Colour runs red to green with how much of the module you can still explain. Size is lines of code.</p>
+    <p class="hint" id="panelHint"></p>
     <div id="panelBody"></div>
   </aside>
 </main>
+
+<div class="section-head mono" id="how"><span>(02) How to read it</span><span></span></div>
+<section class="how">
+  <div><h3>Colour</h3><p>Red to green with how much of the module you can still explain. Never quizzed, or not yet quizzed enough, is red.</p></div>
+  <div><h3>Size</h3><p>Lines of code. Arcs underneath are imports between modules — click a module to follow them.</p></div>
+  <div><h3>Fading</h3><p id="howFading">A module needs 3 answers before it gets a score. Scores never drop with time — only when the code you answered about changes.</p></div>
+</section>
+<footer class="mono"><span>KenMap</span><span>(Run /comprehend in your repo to answer a question)</span></footer>
+
+<div class="toast mono" id="toast" role="status"><span id="toastText"></span><button class="cta" type="button" id="toastOk">OK</button></div>
+
 <script>
 const REMOTE_BRANCH = 'kenmap-data';
-const SVG_NS = 'http://www.w3.org/2000/svg';
 
 /** One hue sweep, red (0) to green (1). A module without a score yet is 0, so also red. */
 function colorFor(score) {
   const s = Math.max(0, Math.min(1, Number(score) || 0));
-  return `hsl(${Math.round(120 * s)} 55% 63%)`;
+  return `hsl(${Math.round(120 * s)} 62% 58%)`;
 }
 
 function paintLegend() {
-  const stops = [0, 0.25, 0.5, 0.75, 1].map((s) => `${colorFor(s)} ${s * 100}%`);
-  document.getElementById('legendBar').style.background = `linear-gradient(to right, ${stops.join(', ')})`;
+  document.getElementById('legendSteps').innerHTML = Array.from({ length: 11 },
+    (_, i) => `<i style="background:${colorFor(i / 10)}"></i>`).join('');
+}
+
+/**
+ * The background: a maze of pixel cells that keeps growing, the way the
+ * template's does. Random walkers fill cells on a grid; each filled cell
+ * draws a border on every side that faces an empty cell, so the walks read
+ * as outlined corridors. Only the cells a new one touches are redrawn.
+ */
+function growMaze(canvas) {
+  const CELL = 8, DENSITY = 0.45, PER_SECOND = 90;
+  const cols = Math.ceil(Math.max(screen.width, innerWidth) / CELL) + 1;
+  const rows = Math.ceil(Math.max(screen.height, innerHeight) / CELL) + 1;
+  const filled = new Uint8Array(cols * rows);
+  const order = [];
+  const ctx = canvas.getContext('2d');
+  const at = (x, y) => x >= 0 && y >= 0 && x < cols && y < rows && filled[y * cols + x];
+
+  function paint(x, y) {
+    const px = x * CELL, py = y * CELL;
+    ctx.fillStyle = '#f7f7f7';
+    ctx.fillRect(px, py, CELL, CELL);
+    ctx.fillStyle = '#d9d9d9';
+    if (!at(x, y - 1)) ctx.fillRect(px, py, CELL, 1);
+    if (!at(x, y + 1)) ctx.fillRect(px, py + CELL - 1, CELL, 1);
+    if (!at(x - 1, y)) ctx.fillRect(px, py, 1, CELL);
+    if (!at(x + 1, y)) ctx.fillRect(px + CELL - 1, py, 1, CELL);
+  }
+  function fill(x, y) {
+    if (x < 0 || y < 0 || x >= cols || y >= rows || at(x, y)) return false;
+    filled[y * cols + x] = 1;
+    order.push(y * cols + x);
+    for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (at(x + dx, y + dy)) paint(x + dx, y + dy);
+    return true;
+  }
+  function size() {
+    const ratio = devicePixelRatio || 1;
+    canvas.width = innerWidth * ratio; canvas.height = innerHeight * ratio;
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    for (const i of order) paint(i % cols, Math.floor(i / cols));
+  }
+
+  const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  // Most walks start from a cell already filled, so the maze grows out of
+  // itself instead of appearing as scattered specks.
+  function spawn() {
+    const from = order.length > 40 && Math.random() < 0.7 ? order[Math.floor(Math.random() * order.length)] : null;
+    return {
+      x: from === null ? Math.floor(Math.random() * cols) : from % cols,
+      y: from === null ? Math.floor(Math.random() * rows) : Math.floor(from / cols),
+      dir: Math.floor(Math.random() * 4), left: 6 + Math.floor(Math.random() * 26),
+    };
+  }
+  const walkers = Array.from({ length: 24 }, spawn);
+  // Short, twisty walks: corridors that kink and branch, never a solid blob.
+  function step() {
+    const w = walkers[Math.floor(Math.random() * walkers.length)];
+    if (Math.random() < 0.42) w.dir = Math.floor(Math.random() * 4);
+    const [dx, dy] = DIRS[w.dir];
+    fill(w.x, w.y);
+    w.x += dx; w.y += dy;
+    if (--w.left <= 0 || w.x < 0 || w.y < 0 || w.x >= cols || w.y >= rows) Object.assign(w, spawn());
+  }
+
+  size();
+  addEventListener('resize', size);
+  const target = cols * rows * DENSITY;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    while (order.length < target) step();
+    return;
+  }
+  let last = performance.now(), owed = 0;
+  (function frame(now) {
+    // Quick at first so the page never looks bare, then slow and steady.
+    const pace = order.length < target * 0.12 ? PER_SECOND * 6 : PER_SECOND;
+    owed += ((now - last) / 1000) * pace;
+    last = now;
+    for (; owed >= 1 && order.length < target; owed--) step();
+    if (order.length < target) requestAnimationFrame(frame);
+  })(last);
 }
 
 /**
@@ -178,17 +455,55 @@ function upright(deg) {
   return deg > 90 || deg < -90 ? deg + 180 : deg;
 }
 
+const pctOf = (score) => Math.round(score * 100);
+
+/**
+ * A circle drawn as a staircase on a grid, traced as one outline so the
+ * stroke follows the steps. Drawn as geometry rather than with a pixelating
+ * filter: a filter's sample points fall between screen pixels at some zoom
+ * levels, and the node vanishes.
+ */
+function pixelDisc(r, cell = 4) {
+  const rows = Math.ceil(r / cell);
+  const half = [];
+  for (let i = -rows; i < rows; i++) {
+    const mid = (i + 0.5) * cell;
+    const w = Math.sqrt(Math.max(0, r * r - mid * mid));
+    half.push({ y: i * cell, w: Math.max(cell, Math.round(w / cell) * cell) });
+  }
+  let d = `M${-half[0].w},${half[0].y}H${half[0].w}`;
+  half.forEach((row, i) => {
+    d += `V${row.y + cell}`;
+    if (i + 1 < half.length) d += `H${half[i + 1].w}`;
+  });
+  for (let i = half.length - 1; i >= 0; i--) {
+    d += `H${-half[i].w}V${half[i].y}`;
+  }
+  return d + 'Z';
+}
+
 function render(report) {
   const title = report.repo || report.name || 'repo';
-  document.getElementById('repo').innerHTML = `KenMap <span>— ${escapeHtml(title)}</span>`;
-  document.getElementById('total').textContent = report.anyScored ? Math.round(report.total * 100) + '%' : '—';
-  document.getElementById('totalNote').textContent = report.anyScored ? 'weighted by lines of code' : 'no module has a score yet';
+  const shortName = title.split('/').pop();
+  const scoredCount = report.modules.filter((m) => m.scored).length;
+  document.title = `KenMap — ${shortName}`;
+  document.getElementById('status').textContent = `(${title} · comprehension map)`;
+  document.getElementById('creditLeft').innerHTML = report.anyScored
+    ? `<b>${pctOf(report.total)}%</b> of ${escapeHtml(shortName)}<br>understood`
+    : `${escapeHtml(shortName)}<br>not scored yet`;
+  document.getElementById('creditRight').innerHTML =
+    `${scoredCount} of ${report.modules.length} modules<br>scored`;
+  document.getElementById('commit').textContent = report.commit ? `(At ${report.commit.slice(0, 7)})` : '';
+  document.getElementById('howFading').textContent =
+    `A module needs ${report.requiredAnswers} answers before it gets a score. Scores never drop with time — only when the code you answered about changes.`;
   document.getElementById('warnings').innerHTML = (report.warnings || [])
-    .map((w) => `<div class="warn">${escapeHtml(w)}</div>`).join('');
+    .map((w) => `<p class="warn">${escapeHtml(w)}</p>`).join('');
+
+  resetPanel();
 
   const host = document.getElementById('graph');
   if (!report.modules.length) {
-    host.innerHTML = '<div class="empty">No modules configured yet — run <code>/comprehend init</code>.</div>';
+    host.innerHTML = '<div class="empty">No modules configured yet — run /comprehend init</div>';
     return;
   }
 
@@ -204,14 +519,14 @@ function render(report) {
     bounds.minX = Math.min(bounds.minX, x); bounds.maxX = Math.max(bounds.maxX, x);
     bounds.minY = Math.min(bounds.minY, y); bounds.maxY = Math.max(bounds.maxY, y);
   };
-  for (const [id, p] of positions) { grow(p.x - sizes.get(id), p.y - sizes.get(id)); grow(p.x + sizes.get(id), p.y + sizes.get(id)); }
+  for (const [id, p] of positions) { grow(p.x - sizes.get(id), p.y - sizes.get(id)); grow(p.x + sizes.get(id) + 4, p.y + sizes.get(id) + 4); }
 
   for (const m of report.modules) {
     const a = positions.get('__root__');
     const b = positions.get(m.id);
     const [ux, uy] = unit(b.x - a.x, b.y - a.y);
-    const x1 = a.x + ux * (sizes.get('__root__') + 2), y1 = a.y + uy * (sizes.get('__root__') + 2);
-    const x2 = b.x - ux * (sizes.get(m.id) + 3), y2 = b.y - uy * (sizes.get(m.id) + 3);
+    const x1 = a.x + ux * (sizes.get('__root__') + 4), y1 = a.y + uy * (sizes.get('__root__') + 4);
+    const x2 = b.x - ux * (sizes.get(m.id) + 4), y2 = b.y - uy * (sizes.get(m.id) + 4);
     const deg = upright((Math.atan2(uy, ux) * 180) / Math.PI);
     const lx = x1 + (x2 - x1) * 0.55, ly = y1 + (y2 - y1) * 0.55;
     parts.push(`<g class="edge contains fwd" data-a="__root__" data-b="${escapeHtml(m.id)}">
@@ -229,12 +544,12 @@ function render(report) {
     const c = { x: (a.x + b.x) / 2, y: a.y + 40 + span * 0.42 };
     const [sx, sy] = unit(c.x - a.x, c.y - a.y);
     const [ex, ey] = unit(b.x - c.x, b.y - c.y);
-    const p0 = { x: a.x + sx * (sizes.get(pair.a) + 3), y: a.y + sy * (sizes.get(pair.a) + 3) };
-    const p2 = { x: b.x - ex * (sizes.get(pair.b) + 3), y: b.y - ey * (sizes.get(pair.b) + 3) };
+    const p0 = { x: a.x + sx * (sizes.get(pair.a) + 4), y: a.y + sy * (sizes.get(pair.a) + 4) };
+    const p2 = { x: b.x - ex * (sizes.get(pair.b) + 4), y: b.y - ey * (sizes.get(pair.b) + 4) };
     const apex = { x: 0.25 * p0.x + 0.5 * c.x + 0.25 * p2.x, y: 0.25 * p0.y + 0.5 * c.y + 0.25 * p2.y };
     grow(apex.x, apex.y + 14);
     const weight = pair.forward + pair.backward;
-    const opacity = (0.3 + 0.45 * Math.sqrt(weight / maxWeight)).toFixed(2);
+    const opacity = (0.18 + 0.5 * Math.sqrt(weight / maxWeight)).toFixed(2);
     const label = pair.forward && pair.backward
       ? `IMPORTS ⇄ ${pair.forward}/${pair.backward}`
       : `IMPORTS ×${weight}`;
@@ -249,23 +564,26 @@ function render(report) {
   }
 
   const required = report.requiredAnswers;
-  const nodes = [{ id: '__root__', label: title, score: report.total, scored: report.anyScored, answers: 0 },
+  const nodes = [{ id: '__root__', label: shortName, score: report.total, scored: report.anyScored, answers: 0 },
     ...report.modules.map((m) => ({ id: m.id, label: m.id, score: m.score, scored: m.scored, answers: m.answers }))];
   for (const node of nodes) {
     const p = positions.get(node.id);
     const r = sizes.get(node.id);
     const lines = wrapLabel(node.label, r);
     // Until a module has its score, show how far along it is instead.
-    const pct = node.scored ? Math.round(node.score * 100) + '%'
+    const pct = node.scored ? pctOf(node.score) + '%'
       : node.answers ? `${node.answers}/${required}` : '—';
     const total = lines.length + 1;
     const first = -((total - 1) * 13) / 2 + 4;
     const text = lines.map((line, i) =>
       `<text text-anchor="middle" y="${first + i * 13}">${escapeHtml(line)}</text>`).join('')
       + `<text class="pct" text-anchor="middle" y="${first + lines.length * 13 + 1}">${pct}</text>`;
-    parts.push(`<g class="node" data-id="${escapeHtml(node.id)}" transform="translate(${p.x},${p.y})">
+    const fill = node.id === '__root__' && !node.scored ? '#ffffff' : colorFor(node.scored ? node.score : 0);
+    parts.push(`<g class="node${node.id === '__root__' ? ' root' : ''}" data-id="${escapeHtml(node.id)}" transform="translate(${p.x},${p.y})">
       <title>${escapeHtml(node.label)} — ${node.scored ? pct : `${node.answers} of ${required} answers, no score yet`}</title>
-      <circle r="${r}" fill="${colorFor(node.scored ? node.score : 0)}"></circle>${text}</g>`);
+      <circle class="ring" r="${r + 7}"></circle>
+      <path d="${pixelDisc(r)}" transform="translate(3,3)" fill="#0a0a0a"></path>
+      <g class="disc"><path d="${pixelDisc(r)}" fill="${fill}" stroke="#0a0a0a" stroke-width="1"></path>${text}</g></g>`);
   }
 
   // A two-module repo should not blow its circles up to fill the screen.
@@ -276,21 +594,23 @@ function render(report) {
   const minY = bounds.minY - pad - Math.max(0, 560 - height) / 2;
   width = Math.max(width, 900);
   height = Math.max(height, 560);
-  host.innerHTML = `<svg viewBox="${minX} ${minY} ${width} ${height}" preserveAspectRatio="xMidYMid meet">
+  host.innerHTML = `<svg class="map" viewBox="${minX} ${minY} ${width} ${height}" preserveAspectRatio="xMidYMid meet">
     <defs>
-      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0,1 L10,5 L0,9 z" fill="#7d8188"></path></marker>
-      <marker id="arrow-hi" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M0,1 L10,5 L0,9 z" fill="#d6d8dc"></path></marker>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,1 L10,5 L0,9 z" fill="#0a0a0a"></path></marker>
+      <marker id="arrow-hi" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,1 L10,5 L0,9 z" fill="#0a0a0a"></path></marker>
     </defs>
     <g id="scene">${parts.join('')}</g></svg>`;
+  // On a narrow screen the map scrolls sideways; start with the root in view.
+  host.scrollLeft = (host.scrollWidth - host.clientWidth) / 2;
 
   const scene = host.querySelector('#scene');
   const clear = () => {
     scene.classList.remove('dimmed');
     scene.querySelectorAll('.active, .selected').forEach((el) => el.classList.remove('active', 'selected'));
   };
-  host.querySelector('svg').addEventListener('click', (event) => {
+  host.querySelector('svg.map').addEventListener('click', (event) => {
     const node = event.target.closest('.node');
     clear();
     if (!node) return resetPanel();
@@ -308,74 +628,97 @@ function render(report) {
   });
 }
 
+function panel(eyebrow, heading, hint, body) {
+  document.getElementById('panelEyebrow').textContent = eyebrow;
+  document.getElementById('panelTitle').textContent = heading;
+  document.getElementById('panelHint').textContent = hint;
+  document.getElementById('panelBody').innerHTML = body;
+}
+
+const rows = (list) => list.map(([k, v]) => `<div class="row"><span>${k}</span><span>${v}</span></div>`).join('');
+
 function resetPanel() {
-  document.getElementById('panelTitle').textContent = 'Pick a module';
-  document.getElementById('panelHint').textContent =
-    'Colour runs red to green with how much of the module you can still explain. Size is lines of code.';
-  document.getElementById('panelBody').innerHTML = '';
+  panel('(Nothing selected)', 'Pick a module',
+    'Click any circle on the map to see its score, the answers behind it, and how much its code has changed since.', '');
 }
 
 function showRepo(report, title) {
   const withScore = report.modules.filter((m) => m.scored).length;
-  document.getElementById('panelTitle').textContent = title;
-  document.getElementById('panelHint').textContent = 'The whole repo, weighted by lines of code.';
-  const rows = [
-    ['score', report.anyScored ? Math.round(report.total * 100) + '%' : '—'],
+  const list = [
     ['modules with a score', `${withScore} of ${report.modules.length}`],
     ['lines in modules', report.modules.reduce((n, m) => n + m.loc, 0).toLocaleString()],
   ];
-  if (report.unassigned) rows.push(['lines outside any module', report.unassigned.loc.toLocaleString()]);
-  document.getElementById('panelBody').innerHTML =
-    rows.map(([k, v]) => `<div class="row"><span>${k}</span><span>${v}</span></div>`).join('');
+  if (report.unassigned) list.push(['lines outside any module', report.unassigned.loc.toLocaleString()]);
+  panel('(The whole repo)', title, 'Weighted by lines of code — a big module counts for more than a small one.',
+    `<div class="big"><b>${report.anyScored ? pctOf(report.total) + '%' : '—'}</b><small>understood</small></div>` + rows(list));
 }
 
 function showModule(module, required) {
   const missing = required - module.answers;
-  document.getElementById('panelTitle').textContent = module.id;
-  document.getElementById('panelHint').textContent = module.scored
-    ? 'Averaged over the answers below.'
+  const hint = module.scored
+    ? 'Averaged over the answers below, each discounted by how much the code changed since.'
     : module.answers
       ? `${module.answers} of ${required} answers — ${missing} more before it gets a score. It counts as 0% until then.`
       : `Never quizzed — it needs ${required} answers before it gets a score, and counts as 0% until then.`;
-
-  const rows = [
-    ['score', module.scored ? Math.round(module.score * 100) + '%' : `no score yet (${module.answers}/${required})`],
-    ['lines', module.loc.toLocaleString()],
-    ['files', module.fileCount],
-  ];
-  if (module.generatedFiles) rows.push(['generated files', module.generatedFiles]);
+  const list = [['lines', module.loc.toLocaleString()], ['files', module.fileCount]];
+  if (module.generatedFiles) list.push(['generated files', module.generatedFiles]);
 
   const answers = module.breakdown.map((b) => {
     const churn = b.churn === null
-      ? '<b>churn unverifiable</b> — the commit you were quizzed at is gone'
-      : `churn <b>${Math.round(b.churn * 100)}%</b> since you answered`;
+      ? '<b>Churn unverifiable</b> — the commit you were quizzed at is gone'
+      : `Code changed <b>${pctOf(b.churn)}%</b> since you answered`;
     const recovered = b.baseline && b.baseline.recovered
       ? '<p>Baseline recovered by timestamp after a history rewrite.</p>' : '';
     return `<div class="answer">
-      <b>${b.quizScore * 100}%</b> answered ${new Date(b.at).toLocaleDateString()} → counts as
-      <b>${Math.round(b.score * 100)}%</b><p>${churn}</p>${recovered}</div>`;
+      <div class="top"><span><b>${b.quizScore * 100}%</b> → counts as <b>${pctOf(b.score)}%</b></span>
+      <span class="when">${new Date(b.at).toLocaleDateString()}</span></div>
+      <p>${churn}</p>${recovered}</div>`;
   }).join('');
 
-  document.getElementById('panelBody').innerHTML =
-    rows.map(([k, v]) => `<div class="row"><span>${k}</span><span>${v}</span></div>`).join('') +
-    `<div class="answers">${answers || '<p class="hint">No answers yet.</p>'}</div>` +
-    `<p class="hint">Quiz it with <code>/comprehend ${escapeHtml(module.id)}</code></p>`;
+  panel('(Module)', module.id, hint,
+    `<div class="big"><b>${module.scored ? pctOf(module.score) + '%' : `${module.answers}/${required}`}</b><small>${module.scored ? 'understood' : 'answers'}</small></div>`
+    + rows(list)
+    + `<div class="answers">${answers || '<p class="hint">No answers yet.</p>'}</div>`
+    + `<p class="hint">Quiz it with <code>/comprehend ${escapeHtml(module.id)}</code></p>`);
 }
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+function toast(text) {
+  const el = document.getElementById('toast');
+  document.getElementById('toastText').textContent = text;
+  el.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+function wireCopy() {
+  document.getElementById('toastOk').addEventListener('click', () => document.getElementById('toast').classList.remove('show'));
+  document.getElementById('copy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText('/comprehend');
+      toast('Copied /comprehend — paste it into Claude Code');
+    } catch {
+      toast('Type /comprehend in Claude Code');
+    }
+  });
+}
+
+function fail(message) {
+  document.getElementById('graph').innerHTML = `<div class="empty">${escapeHtml(message)}</div>`;
+  resetPanel();
+}
+
 async function boot() {
   paintLegend();
+  wireCopy();
+  growMaze(document.getElementById('maze'));
   if (window.__REPORT__) return render(window.__REPORT__);
 
   const repo = new URLSearchParams(location.search).get('repo');
-  if (!repo) {
-    document.getElementById('graph').innerHTML =
-      '<div class="empty">Open this page with <code>?repo=owner/name</code>, or let <code>/comprehend</code> open it locally.</div>';
-    return;
-  }
+  if (!repo) return fail('Open this page with ?repo=owner/name, or let /comprehend open it locally.');
   try {
     // Fetch by commit SHA: raw.githubusercontent caches branch names hard.
     const branch = await fetch(`https://api.github.com/repos/${repo}/branches/${REMOTE_BRANCH}`);
@@ -389,7 +732,7 @@ async function boot() {
     report.repo = repo;
     render(report);
   } catch (err) {
-    document.getElementById('graph').innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`;
+    fail(err.message);
   }
 }
 

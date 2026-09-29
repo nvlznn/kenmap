@@ -22,7 +22,7 @@ description: Quiz yourself on one module of this repo and record how well you st
 
 ## 用法
 
-- `/comprehend` — 考分數最低的模組
+- `/comprehend` — 自動選模組，考你最不熟的部分
 - `/comprehend <模組 id 或檔案／資料夾路徑>` — 考指定模組
 - `/comprehend init` — 設定或調整模組邊界
 - `/comprehend web` — 打開地圖，並顯示連結
@@ -189,7 +189,7 @@ description: Quiz yourself on one module of this repo and record how well you st
 ```
 | 指令 | 做什麼 |
 |---|---|
-| `/comprehend` | 考一題，自動挑模組（先接著考答到一半的） |
+| `/comprehend` | 自動選模組，考你最不熟的部分 |
 | `/comprehend <模組 id 或路徑>` | 考指定的模組，路徑可以是檔案或資料夾 |
 | `/comprehend init` | 設定或調整模組邊界 |
 | `/comprehend web` | 打開地圖，並顯示連結 |
