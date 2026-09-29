@@ -95,3 +95,16 @@ test('commitAtTime gives up when a full squash leaves nothing old enough', async
   // than inventing one.
   assert.equal(await git.commitAtTime(repo.path, quizTime), null);
 });
+
+test('the site link comes from any form of GitHub remote, and from nothing else', async () => {
+  const { githubRepo } = await import('../comprehend/scripts/lib/site.mjs');
+  for (const url of ['git@github.com:nokyhq/habits.git', 'git@github.com:nokyhq/habits',
+    'https://github.com/nokyhq/habits.git', 'https://github.com/nokyhq/habits', 'https://github.com/nokyhq/habits/',
+    'ssh://git@github.com/nokyhq/habits.git', 'https://token@github.com/nokyhq/habits.git']) {
+    assert.equal(githubRepo(url), 'nokyhq/habits', url);
+  }
+  assert.equal(githubRepo('git@github.com:a-b/c.d_e.git'), 'a-b/c.d_e');
+  for (const url of ['git@gitlab.com:nokyhq/habits.git', 'https://github.com.evil.dev/nokyhq/habits', '/tmp/remote.git', '']) {
+    assert.equal(githubRepo(url), null, url);
+  }
+});

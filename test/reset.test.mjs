@@ -7,7 +7,6 @@ import test from 'node:test';
 import { promisify } from 'node:util';
 import { createRepo } from './helpers/fixture.mjs';
 import { record } from '../comprehend/scripts/record.mjs';
-import { render } from '../comprehend/scripts/render.mjs';
 import { reset, status } from '../comprehend/scripts/reset.mjs';
 
 const exec = promisify(execFile);
@@ -90,7 +89,6 @@ test('reset({ local: true }) removes the config, worktree and an already-committ
 test('reset({ local: true }) still clears an uncommitted worktree even with no branch ref yet', async (t) => {
   const repo = await setup(t);
   await record(repo.path, { module: 'ui', score: 1, question: 'why?', answer: 'because' });
-  await render(repo.path, { open: false });
 
   const { removed } = await reset(repo.path, { local: true });
   assert.equal(removed.worktree, true);

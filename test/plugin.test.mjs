@@ -33,10 +33,6 @@ test('plugin.json and package.json carry the same version, so a release bumps bo
   assert.equal(plugin.version, pkg.version);
 });
 
-test('the page template the skill renders from ships inside the plugin', async () => {
-  await fs.access(path.join(ROOT, 'web/index.html'));
-});
-
 test('everything a user reads names the command the way the plugin registers it', async () => {
   // A plugin skill always runs as /<plugin>:<skill>; a bare /comprehend no
   // longer exists. Lines that compare the two on purpose are allowed.

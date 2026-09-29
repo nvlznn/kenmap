@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "kenmap",
   "displayName": "KenMap",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Quizzes you on your own repo, one module at a time, and maps how much of it you still understand.",
   "author": { "name": "Ino", "url": "https://github.com/nvlznn" },
   "homepage": "https://kenmap.noky.dev",

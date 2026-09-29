@@ -56,7 +56,7 @@ KenMap 不對你的 repo 做任何預設。原始碼位置、套件描述檔、�
 LLM 只負責出題與批改。掃描、計分、以及所有寫檔動作都是確定性的 script。
 
 - `.kenmap.json` 放在 main 分支，保存你確認過的模組邊界。
-- orphan 分支 `kenmap-data` 保存測驗紀錄、報告與徽章。
+- orphan 分支 `kenmap-data` 保存測驗紀錄、報告與徽章。每答完一題就自動推上去，網站 [kenmap.noky.dev](https://kenmap.noky.dev) 讀的就是它。
 - 網站只有一個負責 GitHub 登入的小後端（`api/`），沒有資料庫。
 
 ## 開發

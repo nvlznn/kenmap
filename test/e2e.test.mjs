@@ -6,10 +6,9 @@ import path from 'node:path';
 import test from 'node:test';
 import { promisify } from 'node:util';
 import { createRepo } from './helpers/fixture.mjs';
-import { badge, report } from '../comprehend/scripts/report.mjs';
+import { badge, report, writeReport } from '../comprehend/scripts/report.mjs';
 import { publish } from '../comprehend/scripts/publish.mjs';
 import { record } from '../comprehend/scripts/record.mjs';
-import { render } from '../comprehend/scripts/render.mjs';
 import { structure } from '../comprehend/scripts/structure.mjs';
 import { writeConfig } from '../comprehend/scripts/write-config.mjs';
 
@@ -76,22 +75,17 @@ test('the whole flow: discover, configure, answer, publish, then watch a rewrite
   assert.ok(answered.total > before.total, 'answering raises the repo total');
   assert.equal(badge(answered).color, 'yellow', 'data is still unquizzed, so the total is mid-range');
 
-  // 4. The local page works with no push and no network.
-  const page = await render(repo.path, { open: false });
-  const html = await fs.readFile(page, 'utf8');
-  assert.match(html, /window\.__REPORT__/);
-  assert.ok(html.includes('"ui"'), 'the report is baked into the page');
-
-  // 5. Publishing lands on the orphan branch and leaves main alone.
+  // 4. Publishing lands on the orphan branch and leaves main alone.
   await repo.git(['remote', 'add', 'origin', remote]);
+  await writeReport(repo.path); // record --sync writes the report, then publishes
   const published = await publish(repo.path);
   assert.equal(published.pushed, true);
   const { stdout: branches } = await exec('git', ['-C', remote, 'branch', '--format=%(refname:short)']);
   assert.equal(branches.trim(), 'kenmap-data');
   const { stdout: files } = await exec('git', ['-C', remote, 'ls-tree', '--name-only', 'kenmap-data']);
-  assert.deepEqual(files.trim().split('\n').sort(), ['.gitignore', 'badge.json', 'report.json', 'results.jsonl']);
+  assert.deepEqual(files.trim().split('\n').sort(), ['badge.json', 'report.json', 'results.jsonl']);
 
-  // 6. The line that has to hold: a rewrite the user did not follow costs them.
+  // 5. The line that has to hold: a rewrite the user did not follow costs them.
   await repo.write({
     'src/app/lib/ui/home.dart': "import 'package:demo/data/repo.dart';\n" + body(300, 'rewritten by ai'),
   });

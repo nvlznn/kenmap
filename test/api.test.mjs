@@ -191,5 +191,5 @@ test('/api/report says so when a repo has never been published', async (t) => {
   mockGitHub(t, { 'GET /repos/ino/new/contents/report.json?ref=kenmap-data': [404, { message: 'Not Found' }] });
   const res = await report(request('/api/report?repo=ino/new', await signedIn()));
   assert.equal(res.status, 404);
-  assert.match((await res.json()).error, /no published report/);
+  assert.match((await res.json()).error, /no answers from ino\/new yet/);
 });

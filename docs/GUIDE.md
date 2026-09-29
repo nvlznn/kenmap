@@ -12,7 +12,7 @@
 4. [指定模組：`/kenmap:comprehend <module-or-path>`](#4-指定模組kenmapcomprehend-module-or-path)
 5. [看懂地圖頁面](#5-看懂地圖頁面)
 6. [分數是怎麼算出來的](#6-分數是怎麼算出來的)
-7. [發布與 README 徽章](#7-發布與-readme-徽章)
+7. [同步到網站與 README 徽章](#7-同步到網站與-readme-徽章)
 8. [清除 KenMap 的所有資料：`/kenmap:comprehend reset`](#8-清除-kenmap-的所有資料kenmapcomprehend-reset)
 9. [不透過 skill，直接下指令](#9-不透過-skill直接下指令)
 10. [疑難排解](#10-疑難排解)
@@ -137,8 +137,8 @@ KenMap 刻意做得很短：只用中文回覆、不寒暄、不解釋自己在�
 
    如果**這個模組**有還沒 commit 的變更，題目下面會多一行提醒：分數是綁在目前的 commit 上。它只提醒、不會停下來問你要不要繼續。其他地方的未 commit 變更不影響這一題，所以不會提醒。
 3. **你憑印象回答**，不要去翻程式碼——分數量的是「你腦子裡還記得什麼」，不是「你能不能查到答案」。
-4. **KenMap 評分、記錄、更新地圖，一次完成。** 評分只有五種：0、0.25、0.5、0.75、1。這一題的完整內容——題目、你的回答、分數、理由、當下的 commit、時間——會被存下來，**不是只存一個數字**，分數才經得起事後檢查。地圖會跟著更新，但**不會自動跳出瀏覽器**。
-5. **回覆很短**：這題的分數和一兩句解釋，接著一張小表比較這個模組和整個 repo「作答之前」與「現在」的分數，最後一行是「接下來」提示，列出這時最可能用到的指令：模組還沒答滿 3 題時提示繼續考，有分數之後提示再考一題或說「發布」，兩種情況都會附上 `/kenmap:comprehend help` 讓你查所有指令。地圖不另外提示，因為表格下面就有連結。每個流程（init、web、發布、reset）做完時也都會有這一行。表格下面一定會附上地圖連結，想看再點。**它不會自動推到 GitHub**，你說「發布」才會執行（見[第 7 節](#7-發布與-readme-徽章)）。
+4. **KenMap 評分、記錄、推到 GitHub，一次完成。** 評分只有五種：0、0.25、0.5、0.75、1。這一題的完整內容——題目、你的回答、分數、理由、當下的 commit、時間——會被存下來，**不是只存一個數字**，分數才經得起事後檢查。紀錄會自動推到這個 repo 的 `kenmap-data` 分支，[kenmap.noky.dev](https://kenmap.noky.dev) 上的地圖跟著更新，但**不會自動跳出瀏覽器**。
+5. **回覆很短**：這題的分數和一兩句解釋，接著一張小表比較這個模組和整個 repo「作答之前」與「現在」的分數，最後一行是「接下來」提示，列出這時最可能用到的指令：模組還沒答滿 3 題時提示繼續考，有分數之後提示再考一題，兩種情況都會附上 `/kenmap:comprehend help` 讓你查所有指令。每個流程（init、web、reset）做完時也都會有這一行。表格下面一定會附上網站上的地圖連結，想看再點。推送失敗（例如沒網路）的話會多一行說明，作答不會遺失，下一題會一起推上去（見[第 7 節](#7-同步到網站與-readme-徽章)）。
 
 ---
 
@@ -163,7 +163,7 @@ KenMap 會自動判斷這個路徑屬於哪個模組。如果這個路徑**同�
 
 ## 5. 看懂地圖頁面
 
-`/kenmap:comprehend` 考完之後附上的那個連結，點開就是「地圖」。想直接打開，打 `/kenmap:comprehend web`，它會用最新的分數重新產生地圖、打開瀏覽器，並附上連結。
+地圖在 [kenmap.noky.dev](https://kenmap.noky.dev) 上，`/kenmap:comprehend` 考完附上的連結點開就是這個 repo 的地圖。想直接打開，打 `/kenmap:comprehend web`：它會先重算分數（程式碼改過的話分數會變）、推到 GitHub，再打開網站並附上連結。
 
 ### 畫面組成
 
@@ -176,10 +176,9 @@ KenMap 會自動判斷這個路徑屬於哪個模組。如果這個路徑**同�
 - **點一下任何圓圈**：跟它有關的線會亮起來、無關的模組會淡出，右側會展開這個模組的細節（點最上面的 repo 圓圈則會顯示整個 repo 的摘要，點空白處取消選取）——目前分數（還沒答滿 3 題的話，會寫還差幾題）、總行數、檔案數、以及**最近三次作答各自的紀錄**：每筆都寫著「你當初答對幾成」「現在實際算作幾成」，兩者的差距就是被 churn（程式碼變動）吃掉的部分。
 - **頁面上方如果出現黃色警告框**：代表 KenMap 發現了某些狀況，例如某個模組的規則配不到任何檔案、或某筆紀錄的基準 commit 已經找不到了。這些警告不會讓分數算不出來，但值得看一眼。
 
-### 本地模式 vs 遠端模式
+### 誰看得到
 
-- **本地模式**：`/kenmap:comprehend` 考完自動打開的就是這個，資料直接寫死在頁面裡，**不需要 push 到任何地方**，你自己電腦看得到就好。
-- **網站**：[kenmap.noky.dev](https://kenmap.noky.dev)。用 GitHub 登入後按「Connect a repository」，在 GitHub 上選要連的 repo（組織的 repo 就選那個組織），之後就能在網站上看到每個 repo 的分數和地圖，**私有 repo 也可以**。KenMap 只要求讀取程式碼的權限，不會寫入任何東西。要先發布過（見[第 7 節](#7-發布與-readme-徽章)）才看得到分數。
+- **你自己**：[kenmap.noky.dev](https://kenmap.noky.dev)。用 GitHub 登入後按「Connect a repository」，在 GitHub 上選要連的 repo（組織的 repo 就選那個組織），之後就能在網站上看到每個 repo 的分數和地圖，**私有 repo 也可以**。KenMap 只要求讀取程式碼的權限，不會寫入任何東西。至少答過一題、紀錄推上 GitHub 之後才看得到分數。
 - **分享連結**：`https://kenmap.noky.dev/?repo=owner/repo-name`。公開 repo 不用登入就能看，README 徽章點進去就是這個頁面；私有 repo 要登入、而且連接過才看得到。
 
 ---
@@ -201,17 +200,19 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
 
 ---
 
-## 7. 發布與 README 徽章
+## 7. 同步到網站與 README 徽章
 
-`/kenmap:comprehend` 考完問你要不要發布，選「要」之後：
+每答完一題，KenMap 會自動：
 
-1. KenMap 建立（或找到）一個叫 `kenmap-data` 的 git 分支。**這個分支跟你的程式碼沒有共同的歷史**（術語叫 orphan branch），所以測驗紀錄不會混進你平常的開發歷史裡，你的 commit log 看起來完全不受影響。
-2. 測驗紀錄、算好的報告、徽章用的資料，一起被推到這個分支。
-3. **這個過程絕對不會 force push**——如果推送失敗（例如遠端已經有更新的資料），它會直接失敗，不會覆蓋掉別人的資料。
+1. 建立（或找到）一個叫 `kenmap-data` 的 git 分支。**這個分支跟你的程式碼沒有共同的歷史**（術語叫 orphan branch），所以測驗紀錄不會混進你平常的開發歷史裡，你的 commit log 看起來完全不受影響，main 也不會被動到。
+2. 把測驗紀錄、算好的報告、徽章用的資料 commit 到這個分支，推到 GitHub。網站讀的就是這裡。
+3. **絕對不會 force push**——推送失敗（例如沒網路、或遠端已經有別台電腦推上去的新資料）時，這題的紀錄照樣留在你電腦上的這個分支，回覆會說明原因，下一次答題或 `/kenmap:comprehend web` 會再推一次，不會覆蓋掉別人的資料。
+
+**要知道的事**：推上去的內容包含題目和你的作答原文。看得到這個 repo 的人，就看得到這些紀錄。
 
 ### 把徽章放進 README
 
-發布過至少一次之後，在你的 README 貼這行（記得換成你自己的帳號和 repo 名稱），點徽章就會打開這個 repo 的地圖：
+答過至少一題之後，在你的 README 貼這行（記得換成你自己的帳號和 repo 名稱），點徽章就會打開這個 repo 的地圖：
 
 ```markdown
 [![comprehension](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/<你的帳號>/<repo>/kenmap-data/badge.json)](https://kenmap.noky.dev/?repo=<你的帳號>/<repo>)
@@ -228,7 +229,7 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
 | 40%–69% | 黃 |
 | ≥ 70% | 綠 |
 
-**注意徽章會有快取延遲**：shields.io 跟 GitHub 的 raw 檔案服務都會快取，發布之後徽章可能要幾分鐘才會更新，地圖網頁本身通常比較即時。
+**注意徽章會有快取延遲**：shields.io 跟 GitHub 的 raw 檔案服務都會快取，答完題之後徽章可能要幾分鐘才會更新，地圖網頁本身通常比較即時。
 
 ---
 
@@ -261,7 +262,7 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
 
 | 你答應清除的範圍 | 實際動作 |
 |---|---|
-| 本機 | 刪除 `.kenmap.json`；移除 `.kenmap-data/` 這個 git worktree；刪除本機的 `kenmap-data` 分支（如果已經有 commit 過的話——只考過題、從沒 publish 過的話，這個分支其實還沒有任何 commit，所以這步常常沒有東西可刪，但工作目錄裡的測驗紀錄一樣會被清掉） |
+| 本機 | 刪除 `.kenmap.json`；移除 `.kenmap-data/` 這個 git worktree；刪除本機的 `kenmap-data` 分支（如果已經有 commit 過的話；推到 GitHub 上的那份不受影響） |
 | 遠端 | 對 `origin` 執行 `git push origin --delete kenmap-data` |
 
 ---
@@ -279,10 +280,10 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
 | `node $KENMAP/comprehend/scripts/scan.mjs` | 把上面的探測結果對照 `.kenmap.json`，算出每個模組實際歸類到哪些檔案、模組之間的連線 |
 | `node $KENMAP/comprehend/scripts/scan.mjs --resolve "<路徑或模組id>"` | 查一個檔案/資料夾路徑屬於哪個模組 |
 | `node $KENMAP/comprehend/scripts/write-config.mjs --json '<設定 JSON>'` | 手動寫入 `.kenmap.json`（會先驗證，配不到檔案的模組會被拒絕）；加 `--dry-run` 只驗證並回報每個模組的行數，不寫檔 |
-| `node $KENMAP/comprehend/scripts/record.mjs --module <id> --score <0/0.25/0.5/0.75/1> --question "<題目>" --answer "<回答>" --rationale "<理由>"` | 手動寫入一筆測驗紀錄；加 `--render` 會順便重算分數、產生地圖並打開 |
+| `node $KENMAP/comprehend/scripts/record.mjs --module <id> --score <0/0.25/0.5/0.75/1> --question "<題目>" --answer "<回答>" --rationale "<理由>"` | 手動寫入一筆測驗紀錄；加 `--sync` 會順便重算分數並推到 GitHub |
 | `node $KENMAP/comprehend/scripts/report.mjs` | 重新計算所有模組的分數，同時更新 `report.json` 和 `badge.json` |
-| `node $KENMAP/comprehend/scripts/render.mjs` | 用最新分數重新產生地圖頁面並打開瀏覽器；加 `--no-open` 只產生檔案不開瀏覽器 |
-| `node $KENMAP/comprehend/scripts/publish.mjs` | 推送到 `kenmap-data` 分支；加 `--no-push` 只在本機 commit、不真的推送 |
+| `node $KENMAP/comprehend/scripts/site.mjs` | 重算分數、推到 GitHub，再打開網站上的地圖；`/kenmap:comprehend web` 背後跑的就是這個。加 `--no-open` 不開瀏覽器 |
+| `node $KENMAP/comprehend/scripts/publish.mjs` | 重算分數並推送到 `kenmap-data` 分支；加 `--no-push` 只在本機 commit、不真的推送 |
 | `node $KENMAP/comprehend/scripts/reset.mjs` | 只回報現況，不刪任何東西 |
 | `node $KENMAP/comprehend/scripts/reset.mjs --local` | 清掉 `.kenmap.json`、本機工作目錄、本機分支 |
 | `node $KENMAP/comprehend/scripts/reset.mjs --remote` | 刪掉 `origin` 上的 `kenmap-data` 分支 |
@@ -297,17 +298,17 @@ churn    = min(1, max(added, deleted) / max(舊行數, 現在行數))
 
 **同時出現 `/comprehend` 和 `/kenmap:comprehend`。** 你之前用 symlink 裝過舊版，照[第 1 節](#從舊的安裝方式symlink換過來)刪掉舊的捷徑。
 
-**跑完指令，瀏覽器畫面看起來沒變。** 每次重新產生的都是**同一個檔案**（覆蓋，不是新建）。如果瀏覽器已經開著一個分頁指向這個檔案，作業系統有時只會切換過去那個舊分頁，不一定會自動重新整理內容。找到那個分頁，手動按重新整理（Cmd+R / Ctrl+R），或直接點終端機印出來的那行網址開新分頁。
+**答完題，網站上的分數沒變。** 先看回覆裡有沒有「沒同步到網站」那一行，有的話照它寫的原因處理（常見的是沒網路，或推送權限不足）。沒有的話，在網站上重新整理一次頁面。
 
 **題目下面多了一行「有未 commit 的變更」。** 代表你正在考的這個模組裡有還沒 commit 的改動。分數是綁在目前的 commit 上，所以這題量的是 commit 過的版本；想讓分數涵蓋新的改動，先 commit 再考。
 
 **某個模組一直是 0 分。** 兩種可能：還沒答滿 3 題（圓圈顯示「—」或「1/3」「2/3」），或答滿了但答得不好（顯示「0%」）。沒指定模組直接打 `/kenmap:comprehend` 的話，KenMap 會優先接著考答到一半的模組。
 
-**改寫了程式碼，分數卻沒有下降。** 檢查改動有沒有真的 commit——churn 是拿「考試當下的 commit」跟「現在的 HEAD」比對，沒 commit 的改動看不到。另外要重新跑一次讓地圖重新產生（見上面「瀏覽器畫面沒變」）。
+**改寫了程式碼，分數卻沒有下降。** 檢查改動有沒有真的 commit——churn 是拿「考試當下的 commit」跟「現在的 HEAD」比對，沒 commit 的改動看不到。另外，網站只看得到推上去的分數：只改程式、沒答題的話，打一次 `/kenmap:comprehend web` 讓它重算並推上去。
 
 **某筆紀錄的 churn 顯示「無法驗證」。** 代表當初考試那個 commit，在 git 歷史裡已經找不到了（通常是因為 squash merge 或 rebase）。這不是錯誤——分數還是會用你的原始作答分數，只是這部分的扣分沒辦法精確計算。
 
-**網站上看不到某個 repo 的分數。** 確認這個 repo 有沒有真的執行過發布（第 7 節）。私有 repo 要先登入、並且在「Connect a repository」裡選到它；沒登入時網站只讀得到公開 repo。
+**網站上看不到某個 repo 的分數。** 確認這個 repo 至少答過一題，而且推送成功（第 7 節）。私有 repo 要先登入、並且在「Connect a repository」裡選到它；沒登入時網站只讀得到公開 repo。
 
 ---
 

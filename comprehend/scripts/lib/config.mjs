@@ -7,6 +7,8 @@ export const DATA_DIR = '.kenmap-data';
 export const RESULTS_FILE = 'results.jsonl';
 export const REPORT_FILE = 'report.json';
 export const BADGE_FILE = 'badge.json';
+/** Where maps are viewed. It reads report.json from each repo's data branch. */
+export const SITE_URL = 'https://kenmap.noky.dev';
 
 /** One question per quiz, graded on a five-step scale. */
 export const SCORE_STEPS = [0, 0.25, 0.5, 0.75, 1];

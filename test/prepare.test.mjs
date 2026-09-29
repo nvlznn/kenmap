@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
+import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { promisify } from 'node:util';
@@ -108,10 +110,10 @@ test('a path spanning modules comes back as candidates, not a guess', async (t) 
   assert.match(format(result), /橫跨多個模組/);
 });
 
-test('record --render records, rescores and redraws in one call', async (t) => {
+test('record --sync records and rescores in one call, and says when there is nowhere to push', async (t) => {
   const repo = await setup(t);
   const { stdout } = await exec('node', [RECORD, '--repo', repo.path, '--module', 'ui', '--score', '0.75',
-    '--question', 'why?', '--answer', 'because', '--render']);
+    '--question', 'why?', '--answer', 'because', '--sync']);
   const out = JSON.parse(stdout);
   assert.equal(out.module, 'ui');
   assert.equal(out.moduleBefore, null, 'never quizzed before');
@@ -120,18 +122,52 @@ test('record --render records, rescores and redraws in one call', async (t) => {
   assert.equal(out.required, 3);
   assert.equal(out.totalBefore, null);
   assert.equal(out.totalAfter, null);
-  assert.match(out.map, /^file:\/\/.*local\.html$/);
-  assert.equal(out.opened, undefined, 'answering never opens a browser');
+  assert.equal(out.synced, false);
+  assert.match(out.syncError, /no origin remote/);
+  assert.equal(out.map, null, 'no GitHub origin, so no page on the site to link to');
 });
 
-const renderAnswer = async (repo, score) => JSON.parse((await exec('node', [RECORD, '--repo', repo.path,
-  '--module', 'ui', '--score', String(score), '--question', 'why?', '--answer', 'because', '--render'])).stdout);
+test('record --sync pushes the answer so the site sees it, and links to the repo on the site', async (t) => {
+  const repo = await setup(t);
+  const remote = await fs.mkdtemp(path.join(os.tmpdir(), 'kenmap-sync-remote-'));
+  t.after(() => fs.rm(remote, { recursive: true, force: true }));
+  await exec('git', ['init', '-q', '--bare', remote]);
+  await repo.git(['remote', 'add', 'origin', remote]);
+
+  const out = await syncAnswer(repo, 1);
+  assert.equal(out.synced, true);
+  assert.equal(out.syncError, null);
+  const { stdout: log } = await exec('git', ['-C', remote, 'log', '--oneline', 'kenmap-data']);
+  assert.equal(log.trim().split('\n').length, 1);
+
+  // The link names the GitHub repo, whatever form the remote URL takes.
+  await repo.git(['remote', 'set-url', 'origin', 'git@github.com:someone/app.git']);
+  await repo.git(['remote', 'set-url', '--push', 'origin', remote]);
+  assert.equal((await syncAnswer(repo, 1)).map, 'https://kenmap.noky.dev/?repo=someone/app');
+});
+
+test('an answer whose push failed goes up with the next one', async (t) => {
+  const repo = await setup(t);
+  assert.equal((await syncAnswer(repo, 1)).synced, false, 'no remote yet');
+
+  const remote = await fs.mkdtemp(path.join(os.tmpdir(), 'kenmap-retry-remote-'));
+  t.after(() => fs.rm(remote, { recursive: true, force: true }));
+  await exec('git', ['init', '-q', '--bare', remote]);
+  await repo.git(['remote', 'add', 'origin', remote]);
+
+  assert.equal((await syncAnswer(repo, 0.5)).synced, true);
+  const { stdout: results } = await exec('git', ['-C', remote, 'show', 'kenmap-data:results.jsonl']);
+  assert.equal(results.trim().split('\n').length, 2, 'both answers reached the remote');
+});
+
+const syncAnswer = async (repo, score) => JSON.parse((await exec('node', [RECORD, '--repo', repo.path,
+  '--module', 'ui', '--score', String(score), '--question', 'why?', '--answer', 'because', '--sync'])).stdout);
 
 test('the third answer is the one that gives the module its first score', async (t) => {
   const repo = await setup(t);
   await answer(repo, 'ui', 0.5);
   await answer(repo, 'ui', 0.5);
-  const out = await renderAnswer(repo, 1);
+  const out = await syncAnswer(repo, 1);
   assert.equal(out.moduleBefore, null);
   assert.equal(out.moduleAfter, 0.667);
   assert.equal(out.answers, 3);
@@ -141,7 +177,7 @@ test('the third answer is the one that gives the module its first score', async 
 test('an answer on a scored module reports the score it replaced', async (t) => {
   const repo = await setup(t);
   await scoreModule(repo, 'ui', 0.25);
-  const out = await renderAnswer(repo, 1);
+  const out = await syncAnswer(repo, 1);
   assert.equal(out.moduleBefore, 0.25);
   assert.equal(out.moduleAfter, 0.5);
 });

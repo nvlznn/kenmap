@@ -25,7 +25,7 @@ description: Quiz yourself on one module of this repo and record how well you st
 - `/kenmap:comprehend` — 自動選模組，考你最不熟的部分
 - `/kenmap:comprehend <模組 id 或檔案／資料夾路徑>` — 考指定模組
 - `/kenmap:comprehend init` — 設定或調整模組邊界
-- `/kenmap:comprehend web` — 打開地圖，並顯示連結
+- `/kenmap:comprehend web` — 更新並打開網站上的地圖
 - `/kenmap:comprehend reset` — 清除這個 repo 裡 KenMap 的資料
 - `/kenmap:comprehend help` — 顯示所有指令
 
@@ -49,9 +49,9 @@ description: Quiz yourself on one module of this repo and record how well you st
 3. 使用者回答後，執行一次：
    ```bash
    node scripts/record.mjs --module <id> --type <題型 id> --score <0|0.25|0.5|0.75|1> \
-     --question "<題目>" --answer "<使用者的回答>" --rationale "<參考答案重點；答到了什麼、漏了什麼>" --render
+     --question "<題目>" --answer "<使用者的回答>" --rationale "<參考答案重點；答到了什麼、漏了什麼>" --sync
    ```
-   它會記錄、重算分數、更新地圖（不會打開瀏覽器），回傳作答前後的分數（`moduleBefore`、`moduleAfter`、`totalBefore`、`totalAfter`）、這個模組答了幾題（`answers`／`required`）、地圖連結 `map`。模組要答滿 `required` 題才有分數，之前這些欄位是 `null`。
+   它會記錄、重算分數，並推到 GitHub 上獨立的 `kenmap-data` 分支，網站才會更新（不會打開瀏覽器）。回傳作答前後的分數（`moduleBefore`、`moduleAfter`、`totalBefore`、`totalAfter`）、這個模組答了幾題（`answers`／`required`）、有沒有同步成功（`synced`、`syncError`），以及網站上這個 repo 的地圖連結 `map`。模組要答滿 `required` 題才有分數，之前這些欄位是 `null`。
 4. 回覆格式：
    ```
    **<這題分數>** · <一兩句：答對了什麼、錯在哪。不條列、不補充題目沒問的細節>
@@ -66,10 +66,13 @@ description: Quiz yourself on one module of this repo and record how well you st
    ```
    `moduleBefore`、`totalBefore`、`totalAfter` 是 `null` 就寫「還沒有分數」。`moduleAfter` 是 `null` 就寫「已答 <answers>/<required>，還差 <required − answers> 題」。表格下面一定加一行「地圖：<map>」，讓使用者自己決定要不要點開。
 
+   「地圖」那一行的例外，照抄欄位、不要自己組網址：
+   - `map` 是 `null`（origin 不是 GitHub）：寫「地圖：這個 repo 不在 GitHub 上，網站看不到。作答已存在本機。」
+   - `synced` 是 `false`：「地圖」那行照寫，下面加一行「沒同步到網站：<syncError>。作答已存在本機，下一題會一起推上去。」
+
    「接下來」依情況：
    - 這個模組還沒答滿：`` `/kenmap:comprehend` 繼續考 <模組 id>（還差 N 題） · `/kenmap:comprehend help` 看所有指令 ``
-   - 已經有分數：`` `/kenmap:comprehend` 再考一題 · 說「發布」把紀錄推到 GitHub 的 `kenmap-data` 分支 · `/kenmap:comprehend help` 看所有指令 ``
-5. 使用者說「發布」→ `node scripts/publish.mjs`，回一句結果，最後一行：`` 接下來：`/kenmap:comprehend` 再考一題 · `/kenmap:comprehend help` 看所有指令 ``
+   - 已經有分數：`` `/kenmap:comprehend` 再考一題 · `/kenmap:comprehend help` 看所有指令 ``
 
 ### 題型
 
@@ -169,18 +172,20 @@ description: Quiz yourself on one module of this repo and record how well you st
 5. 使用者要調整就改，重跑第 3 步，回覆更新後的完整表格。
 6. 確認後執行 `node scripts/write-config.mjs --json '<設定>'`。設定格式 `{"version":1,"user":"<GitHub 帳號>","modules":{"<id>":["<glob>"]}}`，glob 相對 repo 根目錄；有模組配不到檔案它會拒絕。
 7. 問一句：「要把 `.kenmap.json` commit，並把 `.kenmap-data/` 加進 `.gitignore` 嗎？」這兩件都會動到 main 分支，要使用者答應才做。
-8. 做完（或使用者說不要）之後回一句結果，最後一行：`` 接下來：`/kenmap:comprehend` 考第一題 · `/kenmap:comprehend help` 看所有指令 ``
+8. 做完（或使用者說不要）之後回一句結果，再加一行：「之後每答完一題，題目、作答和分數會自動推到 GitHub 上獨立的 `kenmap-data` 分支（不會動到 main），看得到這個 repo 的人都看得到。」最後一行：`` 接下來：`/kenmap:comprehend` 考第一題 · `/kenmap:comprehend help` 看所有指令 ``
 
 **重跑 init**：不要直接覆蓋。執行 `node scripts/scan.mjs`，用 `| 模組 | 包含 | 行數 | 檔案 |` 表格列出現有模組，問要保留、調整還是重來，並提醒改掉模組 id 會讓那個模組的舊紀錄失聯。
 
 ## web
 
-執行 `node scripts/render.mjs`，它會用最新的分數重新產生地圖、打開瀏覽器，並在最後一行輸出 `file://` 連結。回覆：
+執行 `node scripts/site.mjs`。它會重算分數（程式碼改過的話分數會變）、推到 `kenmap-data` 分支、打開網站，回傳 `map`、`synced`、`syncError`。回覆：
 
 ```
-地圖：<連結>
+地圖：<map>
 接下來：`/kenmap:comprehend` 考一題 · `/kenmap:comprehend help` 看所有指令
 ```
+
+`map` 是 `null` 或 `synced` 是 `false` 時，照「出題」第 4 步的例外寫。
 
 ## help
 
@@ -192,11 +197,11 @@ description: Quiz yourself on one module of this repo and record how well you st
 | `/kenmap:comprehend` | 自動選模組，考你最不熟的部分 |
 | `/kenmap:comprehend <模組 id 或路徑>` | 考指定的模組，路徑可以是檔案或資料夾 |
 | `/kenmap:comprehend init` | 設定或調整模組邊界 |
-| `/kenmap:comprehend web` | 打開地圖，並顯示連結 |
+| `/kenmap:comprehend web` | 更新並打開網站上的地圖 |
 | `/kenmap:comprehend reset` | 清除這個 repo 裡 KenMap 的資料 |
 | `/kenmap:comprehend help` | 顯示這張表 |
 
-考完一題之後回覆「發布」，會把作答紀錄推到 GitHub 上獨立的 `kenmap-data` 分支，不會動到 main。
+每答完一題，紀錄會自動推到 GitHub 上獨立的 `kenmap-data` 分支（不會動到 main），網站 kenmap.noky.dev 就會更新。私有 repo 要先在網站登入並連接。
 ```
 
 這張表本身就是提示，不用再加「接下來」。
@@ -209,7 +214,7 @@ description: Quiz yourself on one module of this repo and record how well you st
    | 項目 | 位置 | 刪除之後 |
    |---|---|---|
    | 模組設定 | `.kenmap.json` | 重跑 init 就會重建 |
-   | 本機作答紀錄與地圖 | `.kenmap-data/` | 作答紀錄一起刪除、無法復原（已發布到 GitHub 的不受影響） |
+   | 本機作答紀錄 | `.kenmap-data/` | 本機副本刪除（已推到 GitHub 的不受影響） |
    | GitHub 上的作答紀錄 | `origin` 的 `kenmap-data` 分支 | 其他人看得到，刪了難復原 |
    ```
    接著**分開**問：「清除本機資料嗎？」；只有 `remoteBranch` 為 true 時再問：「也刪除 GitHub 上的紀錄嗎？」

@@ -18,7 +18,6 @@ export async function ensure(repoRoot, { dir = DATA_DIR, branch = DATA_BRANCH } 
     await git.raw(repoRoot, ['worktree', 'add', '-q', dir, branch]);
   } else {
     await git.raw(repoRoot, ['worktree', 'add', '-q', '--orphan', '-b', branch, dir]);
-    await fs.writeFile(path.join(full, '.gitignore'), 'local.html\n', 'utf8');
   }
   return full;
 }

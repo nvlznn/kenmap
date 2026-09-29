@@ -7,8 +7,7 @@ import * as config from './lib/config.mjs';
 import * as git from './lib/git.mjs';
 import { ensure } from './lib/worktree.mjs';
 import { isMainModule } from './lib/cli.mjs';
-import { pathToFileURL } from 'node:url';
-import { render } from './render.mjs';
+import { sync } from './publish.mjs';
 import { report, writeReport } from './report.mjs';
 import { describe } from './structure.mjs';
 
@@ -57,23 +56,22 @@ if (isMainModule(import.meta.url)) {
     rationale: { type: 'string', default: '' },
     level: { type: 'string', default: 'design' },
     type: { type: 'string' },
-    render: { type: 'boolean', default: false },
+    sync: { type: 'boolean', default: false },
   } });
   const entry = { ...values, score: Number(values.score) };
-  if (!values.render) {
+  if (!values.sync) {
     const result = await record(values.repo, entry);
     process.stdout.write(JSON.stringify(result.entry, null, 2) + '\n');
   } else {
-    // One call instead of record → report → render: every extra tool call is
-    // a round trip the user sits through. It never opens a browser — a tab
-    // popping up after every answer interrupts; the reply carries the link. Scoring before and after costs
-    // milliseconds here and lets the reply show what the answer changed.
+    // One call instead of record → report → publish: every extra tool call is
+    // a round trip the user sits through. Scoring before and after costs
+    // milliseconds here and lets the reply show what the answer changed; the
+    // push is what makes the site show it.
     const repoRoot = await git.repoRoot(values.repo);
     const described = await describe(repoRoot);
     const before = await report(repoRoot, { described });
     await record(repoRoot, entry);
     const after = await writeReport(repoRoot, { described });
-    const page = await render(repoRoot, { open: false, report: after });
     const was = before.modules.find((m) => m.id === values.module);
     const now = after.modules.find((m) => m.id === values.module);
     process.stdout.write(JSON.stringify({
@@ -84,7 +82,7 @@ if (isMainModule(import.meta.url)) {
       required: REQUIRED_ANSWERS,
       totalBefore: before.anyScored ? before.total : null,
       totalAfter: after.anyScored ? after.total : null,
-      map: pathToFileURL(page).href,
+      ...(await sync(repoRoot)),
     }, null, 2) + '\n');
   }
 }
