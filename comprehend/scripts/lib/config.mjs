@@ -34,6 +34,9 @@ export const QUESTION_TYPES = [
 ];
 export const LEGACY_TYPE = 'why';
 
+/** `/comprehend <id>` could not tell a module with one of these names from the subcommand. */
+export const RESERVED_IDS = ['init', 'reset', 'web', 'help'];
+
 export class ConfigError extends Error {}
 
 export function configPath(repoRoot) {
@@ -82,6 +85,9 @@ export function validate(config) {
   for (const id of ids) {
     if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(id)) {
       fail(`module id ${JSON.stringify(id)} must be alphanumeric with . _ - and no whitespace`);
+    }
+    if (RESERVED_IDS.includes(id.toLowerCase())) {
+      fail(`module id ${JSON.stringify(id)} is a /comprehend subcommand — pick another name (reserved: ${RESERVED_IDS.join(', ')})`);
     }
     const globs = modules[id];
     if (!Array.isArray(globs) || globs.length === 0) fail(`module ${id} must list at least one glob`);

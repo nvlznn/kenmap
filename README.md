@@ -41,7 +41,9 @@ ln -s "$PWD/comprehend" ~/.claude/skills/comprehend
 /comprehend                         # 針對分數最低的模組回答一題
 /comprehend <module id>             # 指定模組，用 init 談定的 id
 /comprehend <file or folder path>   # 指定模組，直接給路徑也行，不用背 id
+/comprehend web                     # 顯示地圖連結
 /comprehend reset                   # 清除這個 repo 裡 KenMap 的所有資料，重新開始
+/comprehend help                    # 顯示所有指令
 ```
 
 完整操作說明（安裝、`init` 流程、地圖怎麼看、疑難排解）見 [docs/GUIDE.md](docs/GUIDE.md)。

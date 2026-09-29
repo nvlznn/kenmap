@@ -42,3 +42,9 @@ test('a module that matches nothing is refused, dry run or not', async (t) => {
   const bad = { ...proposal, modules: { ...proposal.modules, ghost: ['lib/none/**'] } };
   await assert.rejects(() => writeConfig(repo.path, bad, { dryRun: true }), /match no files: ghost/);
 });
+
+test('a module named after a subcommand is refused', async (t) => {
+  const repo = await setup(t);
+  const clash = { ...proposal, modules: { web: ['lib/ui/**'] } };
+  await assert.rejects(() => writeConfig(repo.path, clash, { dryRun: true }), /is a \/comprehend subcommand/);
+});

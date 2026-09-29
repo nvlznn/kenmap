@@ -12,6 +12,11 @@ description: Quiz yourself on one module of this repo and record how well you st
 - **只用繁體中文回覆。** 識別字、路徑、指令保持原樣。
 - **使用者體驗第一。** 多個項目共用同一組欄位的，一律用表格；其餘用最短的句子。分數一律寫成百分比（0.75 → 75%），行數加千分位。路徑有共同前綴時，前綴在表格上方寫一次，表格裡只寫剩下的部分；`xxx/**` 寫成 `xxx/`。**數字只照抄 script 的輸出，不要自己算。**
 - **越短越好。** 不寒暄、不說明你正在做什麼、不重述使用者的話、不列步驟、不加總結。只輸出下面各流程規定的內容。
+- **每個階段結束時給下一步提示。** 一個階段做完的那則回覆，最後一行固定是：
+  ```
+  接下來：`<指令>` <做什麼> · `<指令>` <做什麼>
+  ```
+  只列 2 到 3 個**此刻最可能用到**的指令，各流程底下有規定列哪些；不要列使用者剛剛才用過的那個。出題那則、等使用者回答或選擇的那則不加，讓使用者專心回答。
 - **能少做就少做。** 每個流程只跑規定的指令，不額外讀檔、不額外檢查。使用者每多等一次工具呼叫，就多等一輪。
 - script 都在這個檔案旁的 `scripts/`，在目標 repo 根目錄用 `node` 執行。**絕不手寫** `.kenmap.json` 或 `results.jsonl`。
 
@@ -20,9 +25,11 @@ description: Quiz yourself on one module of this repo and record how well you st
 - `/comprehend` — 考分數最低的模組
 - `/comprehend <模組 id 或檔案／資料夾路徑>` — 考指定模組
 - `/comprehend init` — 設定或調整模組邊界
+- `/comprehend web` — 顯示地圖連結
 - `/comprehend reset` — 清除這個 repo 裡 KenMap 的資料
+- `/comprehend help` — 顯示所有指令
 
-`.kenmap.json` 不存在時，不管使用者要什麼，先走 init。
+`init`、`web`、`reset`、`help` 是指令，不會被當成模組。`.kenmap.json` 不存在時：`help` 照常回答；`web` 回「這個 repo 還沒設定，先跑 `/comprehend init`。」；其他一律先走 init。
 
 ## 出題（全程只有兩次指令呼叫）
 
@@ -49,10 +56,14 @@ description: Quiz yourself on one module of this repo and record how well you st
    | `<模組 id>` | <moduleBefore> | <moduleAfter> |
    | 總分 | <totalBefore> | <totalAfter> |
 
-   要發布到 GitHub 就說「發布」。
+   接下來：…
    ```
    `moduleBefore`、`totalBefore`、`totalAfter` 是 `null` 就寫「還沒有分數」。`moduleAfter` 是 `null` 就寫「已答 <answers>/<required>，還差 <required − answers> 題」。`opened` 是 `false` 時，表格下面加一行「地圖：<map>」。
-5. 使用者說「發布」→ `node scripts/publish.mjs`，回一句結果。
+
+   「接下來」依情況：
+   - 這個模組還沒答滿：`` `/comprehend` 繼續考 <模組 id>（還差 N 題） · `/comprehend web` 看地圖 ``
+   - 已經有分數：`` `/comprehend` 再考一題 · `/comprehend web` 看地圖 · 說「發布」推到 GitHub ``
+5. 使用者說「發布」→ `node scripts/publish.mjs`，回一句結果，最後一行：`` 接下來：`/comprehend` 再考一題 · `/comprehend web` 看地圖 ``
 
 ### 題型
 
@@ -133,7 +144,7 @@ description: Quiz yourself on one module of this repo and record how well you st
 ## init
 
 1. 執行 `node scripts/structure.mjs --compact`。
-2. 依**這個 repo 的實際樣子**擬模組切法，不設模組數量目標：有套件邊界就照套件切；目錄有意義就切在那一層；檔案全平攤就用 import 集中度找分界；以產生碼為主的目錄不納入，但要列出來。
+2. 依**這個 repo 的實際樣子**擬模組切法，不設模組數量目標（模組 id 不能是 `init`、`reset`、`web`、`help`）：有套件邊界就照套件切；目錄有意義就切在那一層；檔案全平攤就用 import 集中度找分界；以產生碼為主的目錄不納入，但要列出來。
 3. 執行 `node scripts/write-config.mjs --dry-run --json '<設定>'` 取得每個模組確切的行數、檔案數，以及納入（`covered`）與不納入（`unassigned.loc`）的行數。這一步不寫檔。
 4. 一則回覆：
    ```
@@ -152,8 +163,37 @@ description: Quiz yourself on one module of this repo and record how well you st
 5. 使用者要調整就改，重跑第 3 步，回覆更新後的完整表格。
 6. 確認後執行 `node scripts/write-config.mjs --json '<設定>'`。設定格式 `{"version":1,"user":"<GitHub 帳號>","modules":{"<id>":["<glob>"]}}`，glob 相對 repo 根目錄；有模組配不到檔案它會拒絕。
 7. 問一句：「要把 `.kenmap.json` commit，並把 `.kenmap-data/` 加進 `.gitignore` 嗎？」這兩件都會動到 main 分支，要使用者答應才做。
+8. 做完（或使用者說不要）之後回一句結果，最後一行：`` 接下來：`/comprehend` 考第一題 · `/comprehend help` 看所有指令 ``
 
 **重跑 init**：不要直接覆蓋。執行 `node scripts/scan.mjs`，用 `| 模組 | 包含 | 行數 | 檔案 |` 表格列出現有模組，問要保留、調整還是重來，並提醒改掉模組 id 會讓那個模組的舊紀錄失聯。
+
+## web
+
+執行 `node scripts/render.mjs --no-open`，它會用最新的分數重新產生地圖，輸出一行 `file://` 連結。回覆只有一行：
+
+```
+地圖：<連結>
+接下來：`/comprehend` 考一題 · `/comprehend help` 看所有指令
+```
+
+## help
+
+不跑任何指令，直接回覆這張表：
+
+```
+| 指令 | 做什麼 |
+|---|---|
+| `/comprehend` | 考一題，自動挑模組（先接著考答到一半的） |
+| `/comprehend <模組 id 或路徑>` | 考指定的模組，路徑可以是檔案或資料夾 |
+| `/comprehend init` | 設定或調整模組邊界 |
+| `/comprehend web` | 顯示地圖連結 |
+| `/comprehend reset` | 清除這個 repo 裡 KenMap 的資料 |
+| `/comprehend help` | 顯示這張表 |
+
+考完一題之後回覆「發布」，會把紀錄推到 GitHub。
+```
+
+這張表本身就是提示，不用再加「接下來」。
 
 ## reset
 
@@ -168,7 +208,7 @@ description: Quiz yourself on one module of this repo and record how well you st
    ```
    接著**分開**問：「清除本機資料嗎？」；只有 `remoteBranch` 為 true 時再問：「也刪除 GitHub 上的紀錄嗎？」
 3. 只執行使用者答應的：`--local`、`--remote`，或兩個都加。**絕不因為使用者答應清本機，就順便加 `--remote`。**
-4. 依輸出的 `removed` 回一句實際刪了什麼。
+4. 依輸出的 `removed` 回一句實際刪了什麼，最後一行：`` 接下來：`/comprehend init` 重新設定 · `/comprehend help` 看所有指令 ``
 
 ## 分數怎麼算（使用者問才講）
 
