@@ -50,7 +50,7 @@
   .cta:active { transform: translateY(0); }
   @media (max-width: 760px) {
     .bar { grid-template-columns: 1fr auto; }
-    .status, .bar nav a { display: none; }
+    .status, .bar nav a:not(.cta):not(.gh) { display: none; }
   }
 
   /* ── hero ────────────────────────────────────────────── */
@@ -207,9 +207,65 @@
   }
   .toast.show { transform: none; }
   .toast .cta { padding: 7px 10px; }
+
+  /* ── header extras: GitHub star badge, signed-in user ── */
+  a.cta { display: inline-block; text-decoration: none !important; text-transform: none; }
+  .gh { display: inline-flex; line-height: 0; }
+  .gh img { height: 20px; }
+  .user { display: inline-flex; align-items: center; gap: 8px; text-transform: none; }
+  .user img { width: 24px; height: 24px; border-radius: 4px; border: 1px solid var(--ink); image-rendering: pixelated; }
+  .linkish { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-transform: uppercase; }
+  .linkish:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  /*
+   * One page, four views. The page opens as the landing view (just the hero),
+   * so a signed-out visitor never sees the map flash in; boot() picks the
+   * real view once it knows whether this is a local file, who is signed in,
+   * and whether a repo was asked for.
+   */
+  body[data-view="landing"] :is(#warnings, #map, main, #how, .how, #reposView) { display: none; }
+  body[data-view="landing"] .hero { min-height: calc(100vh - 62px); min-height: calc(100svh - 62px); }
+  body[data-view="landing"] .scroll { display: none; }
+  body[data-view="repos"] :is(.hero, #warnings, #map, main, #how, .how) { display: none; }
+  body[data-view="map"] :is(.hero, #reposView) { display: none; }
+  body[data-view="local"] #reposView { display: none; }
+  .empty a:not(.cta) { color: var(--ink); }
+  .empty .cta { margin-top: 18px; text-transform: none; }
+
+  /* ── your repos ──────────────────────────────────────── */
+  #reposView { min-height: calc(100vh - 62px); }
+  #reposView .section-head { border-top: 0; }
+  .repo-table { width: 100%; border-collapse: collapse; background: color-mix(in srgb, var(--paper) 86%, transparent); }
+  .repo-table th {
+    text-align: left; font: 400 12px var(--mono); text-transform: uppercase; color: var(--muted);
+    padding: 10px var(--gutter); border-bottom: 1px solid var(--rule);
+  }
+  .repo-table td { padding: 16px var(--gutter); border-bottom: 1px solid var(--rule); vertical-align: middle; }
+  .repo-table tr.has-data { cursor: pointer; }
+  .repo-table tr.has-data:hover td { background: var(--wash); }
+  .repo-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .repo-name { font: 600 16px var(--sans); text-decoration: none; }
+  .tag {
+    display: inline-block; margin-left: 8px; padding: 1px 6px; border: 1px solid var(--ink); border-radius: 3px;
+    font: 10px var(--mono); text-transform: uppercase; vertical-align: 2px;
+  }
+  .score { display: inline-flex; align-items: center; gap: 10px; }
+  .score i { width: 14px; height: 14px; display: block; border: 1px solid var(--ink); }
+  .score b { font: 700 30px/1 var(--display); filter: url(#px-sm); }
+  .badge-cell { display: flex; align-items: center; gap: 10px; }
+  .badge-cell img { height: 20px; }
+  .copy { font: 11px var(--mono); text-transform: uppercase; background: var(--paper); border: 1px solid var(--ink); border-radius: 3px; padding: 4px 7px; cursor: pointer; }
+  .copy:hover { background: var(--ink); color: var(--paper); }
+  .repos-empty { padding: 72px var(--gutter); text-align: center; }
+  .repos-empty h2 { margin: 0 0 12px; font: 700 40px/1 var(--display); text-transform: uppercase; filter: url(#px-sm); }
+  .repos-empty p { color: var(--muted); margin: 0 auto 22px; max-width: 46ch; }
+  @media (max-width: 760px) {
+    .repo-table .hide-sm { display: none; }
+    .bar nav .gh, .user span { display: none; }
+  }
 </style>
 </head>
-<body>
+<body data-view="landing">
 <!--
   Pixelation: keep a 2px sample from each cell, then grow it to fill the
   cell. The sample is 2px, not 1px, because a 1px sample can land between
@@ -235,10 +291,7 @@
 <header class="bar">
   <a class="wordmark" href="#top" aria-label="KenMap"><svg viewBox="0 0 46 7" aria-hidden="true"><path fill="currentColor" d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM1 1h1v1h-1zM5 1h1v1h-1zM1 2h1v1h-1zM4 2h1v1h-1zM1 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM1 4h1v1h-1zM4 4h1v1h-1zM1 5h1v1h-1zM5 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM8 0h1v1h-1zM9 0h1v1h-1zM10 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM13 0h1v1h-1zM9 1h1v1h-1zM13 1h1v1h-1zM9 2h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM12 3h1v1h-1zM9 4h1v1h-1zM9 5h1v1h-1zM13 5h1v1h-1zM8 6h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM15 0h1v1h-1zM16 0h1v1h-1zM19 0h1v1h-1zM20 0h1v1h-1zM21 0h1v1h-1zM16 1h1v1h-1zM17 1h1v1h-1zM20 1h1v1h-1zM16 2h1v1h-1zM18 2h1v1h-1zM20 2h1v1h-1zM16 3h1v1h-1zM18 3h1v1h-1zM20 3h1v1h-1zM16 4h1v1h-1zM19 4h1v1h-1zM20 4h1v1h-1zM16 5h1v1h-1zM20 5h1v1h-1zM15 6h1v1h-1zM16 6h1v1h-1zM17 6h1v1h-1zM20 6h1v1h-1zM23 0h1v1h-1zM24 0h1v1h-1zM29 0h1v1h-1zM30 0h1v1h-1zM24 1h1v1h-1zM25 1h1v1h-1zM28 1h1v1h-1zM29 1h1v1h-1zM24 2h1v1h-1zM26 2h1v1h-1zM27 2h1v1h-1zM29 2h1v1h-1zM24 3h1v1h-1zM26 3h1v1h-1zM27 3h1v1h-1zM29 3h1v1h-1zM24 4h1v1h-1zM29 4h1v1h-1zM24 5h1v1h-1zM29 5h1v1h-1zM23 6h1v1h-1zM24 6h1v1h-1zM25 6h1v1h-1zM28 6h1v1h-1zM29 6h1v1h-1zM30 6h1v1h-1zM35 0h1v1h-1zM34 1h1v1h-1zM36 1h1v1h-1zM34 2h1v1h-1zM36 2h1v1h-1zM33 3h1v1h-1zM37 3h1v1h-1zM33 4h1v1h-1zM34 4h1v1h-1zM35 4h1v1h-1zM36 4h1v1h-1zM37 4h1v1h-1zM33 5h1v1h-1zM37 5h1v1h-1zM32 6h1v1h-1zM33 6h1v1h-1zM34 6h1v1h-1zM36 6h1v1h-1zM37 6h1v1h-1zM38 6h1v1h-1zM40 0h1v1h-1zM41 0h1v1h-1zM42 0h1v1h-1zM43 0h1v1h-1zM44 0h1v1h-1zM41 1h1v1h-1zM45 1h1v1h-1zM41 2h1v1h-1zM45 2h1v1h-1zM41 3h1v1h-1zM42 3h1v1h-1zM43 3h1v1h-1zM44 3h1v1h-1zM41 4h1v1h-1zM41 5h1v1h-1zM40 6h1v1h-1zM41 6h1v1h-1zM42 6h1v1h-1z"></path></svg></a>
   <div class="status mono" id="status">(comprehension map)</div>
-  <nav class="mono">
-    <a href="#map">Map</a><a href="#how">How to read</a>
-    <button class="cta" id="copy" type="button">Quiz me →</button>
-  </nav>
+  <nav class="mono" id="nav"></nav>
 </header>
 
 <canvas id="maze" aria-hidden="true"></canvas>
@@ -249,14 +302,22 @@
     <span class="line slogan" style="--i:2">do you still <span class="fuzzy" tabindex="0">understand</span>?</span>
   </h1>
   <div class="credits mono">
-    <div id="creditLeft">Comprehension<br>map</div>
+    <div id="creditLeft">Quizzes you on<br>your own code</div>
     <svg class="seal" viewBox="0 0 34 34" aria-hidden="true">
       <rect x="1" y="1" width="32" height="32" rx="7" fill="none" stroke="currentColor"></rect>
       <path d="M9 9v16M9 17l8-8M11.5 15 17 25M21 25V9l4 7 4-7v16" fill="none" stroke="currentColor" stroke-width="1.4"></path>
     </svg>
-    <div id="creditRight">Git is the<br>database</div>
+    <div id="creditRight"><a href="https://github.com/nvlznn/kenmap" target="_blank" rel="noopener">Open source<br>on GitHub ↗</a></div>
   </div>
   <div class="hero-foot mono"><span class="scroll">(Scroll ↓)</span><span class="scroll" id="commit"></span></div>
+</section>
+
+<section id="reposView">
+  <div class="section-head mono">
+    <span>(01) Your repos</span>
+    <a class="cta" id="connect" href="#">Connect a repository →</a>
+  </div>
+  <div id="repoList"></div>
 </section>
 
 <div id="warnings"></div>
@@ -286,6 +347,7 @@
 
 <script>
 const REMOTE_BRANCH = 'kenmap-data';
+const PROJECT_REPO = 'nvlznn/kenmap';
 
 /** One hue sweep, red (0) to green (1). A module without a score yet is 0, so also red. */
 function colorFor(score) {
@@ -694,37 +756,148 @@ function toast(text) {
   toast.timer = setTimeout(() => el.classList.remove('show'), 3200);
 }
 
-function wireCopy() {
-  document.getElementById('toastOk').addEventListener('click', () => document.getElementById('toast').classList.remove('show'));
-  document.getElementById('copy').addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText('/comprehend');
-      toast('Copied /comprehend — paste it into Claude Code');
-    } catch {
-      toast('Type /comprehend in Claude Code');
-    }
-  });
+async function copy(text, done) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(done);
+  } catch {
+    toast('Could not copy — select it by hand');
+  }
 }
 
-function fail(message) {
-  document.getElementById('graph').innerHTML = `<div class="empty">${escapeHtml(message)}</div>`;
+const SIGN_IN = '<a class="cta" href="/api/auth/login">Sign in with GitHub →</a>';
+
+function fail(message, { signIn = false } = {}) {
+  document.getElementById('graph').innerHTML =
+    `<div class="empty"><div>${escapeHtml(message)}${signIn ? `<br>${SIGN_IN}` : ''}</div></div>`;
   resetPanel();
 }
 
-async function boot() {
-  paintLegend();
-  wireCopy();
-  growMaze(document.getElementById('maze'));
-  if (window.__REPORT__) return render(window.__REPORT__);
+/** The header's right side depends on where you are and whether you are signed in. */
+function renderNav(view, me) {
+  const star = `<a class="gh" href="https://github.com/${PROJECT_REPO}" target="_blank" rel="noopener" title="KenMap on GitHub">
+    <img src="https://img.shields.io/github/stars/${PROJECT_REPO}?style=social" alt="Star KenMap on GitHub"></a>`;
+  const user = me?.signedIn
+    ? `<span class="user"><img src="${escapeHtml(me.avatar)}" alt=""><span>${escapeHtml(me.login)}</span></span>
+       <button class="linkish" id="signOut" type="button">Sign out</button>`
+    : SIGN_IN;
+  const items = {
+    local: `<a href="#map">Map</a><a href="#how">How to read</a>${star}<button class="cta" id="copy" type="button">Quiz me →</button>`,
+    landing: `${star}${SIGN_IN}`,
+    repos: `${star}${user}`,
+    map: `${me?.signedIn ? '<a href="/">← Your repos</a>' : ''}<a href="#how">How to read</a>${star}${user}`,
+  };
+  document.getElementById('nav').innerHTML = items[view];
+  document.getElementById('copy')?.addEventListener('click', () =>
+    copy('/comprehend', 'Copied /comprehend — paste it into Claude Code'));
+  document.getElementById('signOut')?.addEventListener('click', async () => {
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    location.href = '/';
+  });
+}
 
-  const repo = new URLSearchParams(location.search).get('repo');
-  if (!repo) return fail('Open this page with ?repo=owner/name, or let /comprehend open it locally.');
+function setView(view, me) {
+  document.body.dataset.view = view;
+  document.querySelector('.wordmark').href = view === 'local' ? '#top' : '/';
+  renderNav(view, me);
+}
+
+/** Signed out whenever the API is not there to ask, e.g. the page opened as a plain file. */
+async function whoAmI() {
+  try {
+    const res = await fetch('/api/me', { headers: { Accept: 'application/json' } });
+    if (res.ok) return await res.json();
+  } catch {}
+  return { signedIn: false };
+}
+
+const badgeUrl = (repo) =>
+  `https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/${repo}/${REMOTE_BRANCH}/badge.json`;
+const mapUrl = (repo) => `${location.origin}/?repo=${repo}`;
+
+async function loadRepos(me) {
+  document.getElementById('status').textContent = '(your repos)';
+  document.getElementById('connect').href = `https://github.com/apps/${encodeURIComponent(me.appSlug)}/installations/new`;
+  const host = document.getElementById('repoList');
+  host.innerHTML = '<p class="repos-empty mono">Loading…</p>';
+
+  let body;
+  try {
+    const res = await fetch('/api/repos');
+    if (res.status === 401) return (location.href = '/');
+    body = await res.json();
+    if (!res.ok) throw new Error(body.error || `server said ${res.status}`);
+  } catch (err) {
+    host.innerHTML = `<p class="repos-empty mono">Could not load your repos — ${escapeHtml(err.message)}</p>`;
+    return;
+  }
+
+  if (!body.repos.length) {
+    host.innerHTML = `<div class="repos-empty">
+      <h2>No repos yet</h2>
+      <p>Connect a repository to see its map here. KenMap only asks to read its contents — nothing is ever written.</p>
+      <a class="cta" href="${escapeHtml(document.getElementById('connect').href)}">Connect a repository →</a></div>`;
+    return;
+  }
+
+  const row = (r) => {
+    const name = `<a class="repo-name" href="/?repo=${escapeHtml(r.fullName)}">${escapeHtml(r.fullName)}</a>${r.private ? '<span class="tag">Private</span>' : ''}`;
+    if (!r.hasData) {
+      return `<tr><td>${name}</td><td colspan="4" class="hint" style="margin:0">${r.unreadable
+        ? 'Could not read this repo’s report.'
+        : 'No report yet — run <code>/comprehend</code> in this repo, then say 「發布」 to publish.'}</td></tr>`;
+    }
+    const score = r.total === null
+      ? '<span class="score"><i style="background:' + colorFor(0) + '"></i><b>—</b></span>'
+      : `<span class="score"><i style="background:${colorFor(r.total)}"></i><b>${pctOf(r.total)}%</b></span>`;
+    // shields.io can only read public repos, so a private repo gets no badge.
+    const badge = r.private ? '<span class="hint">—</span>' : `<span class="badge-cell">
+      <img src="${escapeHtml(badgeUrl(r.fullName))}" alt="comprehension badge">
+      <button class="copy" type="button" data-repo="${escapeHtml(r.fullName)}">Copy README snippet</button></span>`;
+    return `<tr class="has-data" data-repo="${escapeHtml(r.fullName)}">
+      <td>${name}</td><td>${score}</td>
+      <td class="num">${r.scoredModules} / ${r.modules}</td>
+      <td class="num hide-sm">${r.generatedAt ? new Date(r.generatedAt).toLocaleDateString() : '—'}</td>
+      <td class="hide-sm">${badge}</td></tr>`;
+  };
+  host.innerHTML = `<table class="repo-table">
+    <thead><tr><th>Repo</th><th>Understood</th><th class="num">Modules scored</th>
+      <th class="num hide-sm">Published</th><th class="hide-sm">README badge</th></tr></thead>
+    <tbody>${body.repos.map(row).join('')}</tbody></table>`;
+
+  host.querySelector('tbody').addEventListener('click', (event) => {
+    const button = event.target.closest('.copy');
+    if (button) {
+      const repo = button.dataset.repo;
+      return copy(`[![comprehension](${badgeUrl(repo)})](${mapUrl(repo)})`, `Copied the badge for ${repo} — paste it into its README`);
+    }
+    const tr = event.target.closest('tr.has-data');
+    if (tr && !event.target.closest('a')) location.href = `/?repo=${encodeURIComponent(tr.dataset.repo)}`;
+  });
+}
+
+/** Signed in: through the API, so private repos work. Signed out: public repos, straight from GitHub. */
+async function loadMap(repo, me) {
+  document.getElementById('status').textContent = `(${repo} · comprehension map)`;
+  if (me.signedIn) {
+    try {
+      const res = await fetch(`/api/report?repo=${encodeURIComponent(repo)}`);
+      const body = await res.json();
+      if (res.ok) return render(body);
+      if (res.status !== 401) return fail(body.error || `server said ${res.status}`);
+    } catch (err) {
+      return fail(err.message);
+    }
+  }
   try {
     // Fetch by commit SHA: raw.githubusercontent caches branch names hard.
     const branch = await fetch(`https://api.github.com/repos/${repo}/branches/${REMOTE_BRANCH}`);
-    if (!branch.ok) throw new Error(branch.status === 404
-      ? `no ${REMOTE_BRANCH} branch in ${repo} — has it been published yet?`
-      : `GitHub API said ${branch.status}` + (branch.status === 403 ? ' (rate limit, try again later)' : ''));
+    if (branch.status === 404) {
+      return fail(me.signedIn
+        ? `No published report in ${repo} yet.`
+        : `No public report for ${repo}. If it is private, sign in to see it.`, { signIn: !me.signedIn });
+    }
+    if (!branch.ok) throw new Error(`GitHub API said ${branch.status}` + (branch.status === 403 ? ' (rate limit, try again later)' : ''));
     const sha = (await branch.json()).commit.sha;
     const data = await fetch(`https://raw.githubusercontent.com/${repo}/${sha}/report.json`);
     if (!data.ok) throw new Error(`report.json missing at ${sha.slice(0, 7)}`);
@@ -734,6 +907,30 @@ async function boot() {
   } catch (err) {
     fail(err.message);
   }
+}
+
+async function boot() {
+  paintLegend();
+  document.getElementById('toastOk').addEventListener('click', () => document.getElementById('toast').classList.remove('show'));
+  growMaze(document.getElementById('maze'));
+  if (window.__REPORT__) {
+    setView('local');
+    return render(window.__REPORT__);
+  }
+
+  const params = new URLSearchParams(location.search);
+  const repo = params.get('repo');
+  const me = await whoAmI();
+  if (params.get('error') === 'login') toast('Sign-in did not finish — try again');
+  if (repo) {
+    setView('map', me);
+    return loadMap(repo, me);
+  }
+  if (me.signedIn) {
+    setView('repos', me);
+    return loadRepos(me);
+  }
+  setView('landing', me);
 }
 
 boot();
