@@ -25,7 +25,7 @@ description: Quiz yourself on one module of this repo and record how well you st
 - `/comprehend` — 考分數最低的模組
 - `/comprehend <模組 id 或檔案／資料夾路徑>` — 考指定模組
 - `/comprehend init` — 設定或調整模組邊界
-- `/comprehend web` — 顯示地圖連結
+- `/comprehend web` — 打開地圖，並顯示連結
 - `/comprehend reset` — 清除這個 repo 裡 KenMap 的資料
 - `/comprehend help` — 顯示所有指令
 
@@ -46,7 +46,7 @@ description: Quiz yourself on one module of this repo and record how well you st
    node scripts/record.mjs --module <id> --type <題型 id> --score <0|0.25|0.5|0.75|1> \
      --question "<題目>" --answer "<使用者的回答>" --rationale "<參考答案重點；答到了什麼、漏了什麼>" --render
    ```
-   它會記錄、重算分數、產生地圖並嘗試打開，回傳作答前後的分數（`moduleBefore`、`moduleAfter`、`totalBefore`、`totalAfter`）、這個模組答了幾題（`answers`／`required`）、`map`、`opened`。模組要答滿 `required` 題才有分數，之前這些欄位是 `null`。
+   它會記錄、重算分數、更新地圖（不會打開瀏覽器），回傳作答前後的分數（`moduleBefore`、`moduleAfter`、`totalBefore`、`totalAfter`）、這個模組答了幾題（`answers`／`required`）、地圖連結 `map`。模組要答滿 `required` 題才有分數，之前這些欄位是 `null`。
 4. 回覆格式：
    ```
    **<這題分數>** · <一兩句：答對了什麼、錯在哪。不條列、不補充題目沒問的細節>
@@ -56,14 +56,15 @@ description: Quiz yourself on one module of this repo and record how well you st
    | `<模組 id>` | <moduleBefore> | <moduleAfter> |
    | 總分 | <totalBefore> | <totalAfter> |
 
+   地圖：<map>
    接下來：…
    ```
-   `moduleBefore`、`totalBefore`、`totalAfter` 是 `null` 就寫「還沒有分數」。`moduleAfter` 是 `null` 就寫「已答 <answers>/<required>，還差 <required − answers> 題」。`opened` 是 `false` 時，表格下面加一行「地圖：<map>」。
+   `moduleBefore`、`totalBefore`、`totalAfter` 是 `null` 就寫「還沒有分數」。`moduleAfter` 是 `null` 就寫「已答 <answers>/<required>，還差 <required − answers> 題」。表格下面一定加一行「地圖：<map>」，讓使用者自己決定要不要點開。
 
    「接下來」依情況：
-   - 這個模組還沒答滿：`` `/comprehend` 繼續考 <模組 id>（還差 N 題） · `/comprehend web` 看地圖 ``
-   - 已經有分數：`` `/comprehend` 再考一題 · `/comprehend web` 看地圖 · 說「發布」推到 GitHub ``
-5. 使用者說「發布」→ `node scripts/publish.mjs`，回一句結果，最後一行：`` 接下來：`/comprehend` 再考一題 · `/comprehend web` 看地圖 ``
+   - 這個模組還沒答滿：`` `/comprehend` 繼續考 <模組 id>（還差 N 題） · `/comprehend help` 看所有指令 ``
+   - 已經有分數：`` `/comprehend` 再考一題 · 說「發布」把紀錄推到 GitHub 的 `kenmap-data` 分支 · `/comprehend help` 看所有指令 ``
+5. 使用者說「發布」→ `node scripts/publish.mjs`，回一句結果，最後一行：`` 接下來：`/comprehend` 再考一題 · `/comprehend help` 看所有指令 ``
 
 ### 題型
 
@@ -169,7 +170,7 @@ description: Quiz yourself on one module of this repo and record how well you st
 
 ## web
 
-執行 `node scripts/render.mjs --no-open`，它會用最新的分數重新產生地圖，輸出一行 `file://` 連結。回覆只有一行：
+執行 `node scripts/render.mjs`，它會用最新的分數重新產生地圖、打開瀏覽器，並在最後一行輸出 `file://` 連結。回覆：
 
 ```
 地圖：<連結>
@@ -186,11 +187,11 @@ description: Quiz yourself on one module of this repo and record how well you st
 | `/comprehend` | 考一題，自動挑模組（先接著考答到一半的） |
 | `/comprehend <模組 id 或路徑>` | 考指定的模組，路徑可以是檔案或資料夾 |
 | `/comprehend init` | 設定或調整模組邊界 |
-| `/comprehend web` | 顯示地圖連結 |
+| `/comprehend web` | 打開地圖，並顯示連結 |
 | `/comprehend reset` | 清除這個 repo 裡 KenMap 的資料 |
 | `/comprehend help` | 顯示這張表 |
 
-考完一題之後回覆「發布」，會把紀錄推到 GitHub。
+考完一題之後回覆「發布」，會把作答紀錄推到 GitHub 上獨立的 `kenmap-data` 分支，不會動到 main。
 ```
 
 這張表本身就是提示，不用再加「接下來」。

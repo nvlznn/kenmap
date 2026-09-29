@@ -8,7 +8,7 @@ import * as git from './lib/git.mjs';
 import { ensure } from './lib/worktree.mjs';
 import { isMainModule } from './lib/cli.mjs';
 import { pathToFileURL } from 'node:url';
-import { openInBrowser, render } from './render.mjs';
+import { render } from './render.mjs';
 import { report, writeReport } from './report.mjs';
 import { describe } from './structure.mjs';
 
@@ -58,7 +58,6 @@ if (isMainModule(import.meta.url)) {
     level: { type: 'string', default: 'design' },
     type: { type: 'string' },
     render: { type: 'boolean', default: false },
-    'no-open': { type: 'boolean', default: false },
   } });
   const entry = { ...values, score: Number(values.score) };
   if (!values.render) {
@@ -66,7 +65,8 @@ if (isMainModule(import.meta.url)) {
     process.stdout.write(JSON.stringify(result.entry, null, 2) + '\n');
   } else {
     // One call instead of record → report → render: every extra tool call is
-    // a round trip the user sits through. Scoring before and after costs
+    // a round trip the user sits through. It never opens a browser — a tab
+    // popping up after every answer interrupts; the reply carries the link. Scoring before and after costs
     // milliseconds here and lets the reply show what the answer changed.
     const repoRoot = await git.repoRoot(values.repo);
     const described = await describe(repoRoot);
@@ -85,7 +85,6 @@ if (isMainModule(import.meta.url)) {
       totalBefore: before.anyScored ? before.total : null,
       totalAfter: after.anyScored ? after.total : null,
       map: pathToFileURL(page).href,
-      opened: values['no-open'] ? false : await openInBrowser(page),
     }, null, 2) + '\n');
   }
 }

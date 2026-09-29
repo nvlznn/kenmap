@@ -111,7 +111,7 @@ test('a path spanning modules comes back as candidates, not a guess', async (t) 
 test('record --render records, rescores and redraws in one call', async (t) => {
   const repo = await setup(t);
   const { stdout } = await exec('node', [RECORD, '--repo', repo.path, '--module', 'ui', '--score', '0.75',
-    '--question', 'why?', '--answer', 'because', '--render', '--no-open']);
+    '--question', 'why?', '--answer', 'because', '--render']);
   const out = JSON.parse(stdout);
   assert.equal(out.module, 'ui');
   assert.equal(out.moduleBefore, null, 'never quizzed before');
@@ -121,11 +121,11 @@ test('record --render records, rescores and redraws in one call', async (t) => {
   assert.equal(out.totalBefore, null);
   assert.equal(out.totalAfter, null);
   assert.match(out.map, /^file:\/\/.*local\.html$/);
-  assert.equal(out.opened, false);
+  assert.equal(out.opened, undefined, 'answering never opens a browser');
 });
 
 const renderAnswer = async (repo, score) => JSON.parse((await exec('node', [RECORD, '--repo', repo.path,
-  '--module', 'ui', '--score', String(score), '--question', 'why?', '--answer', 'because', '--render', '--no-open'])).stdout);
+  '--module', 'ui', '--score', String(score), '--question', 'why?', '--answer', 'because', '--render'])).stdout);
 
 test('the third answer is the one that gives the module its first score', async (t) => {
   const repo = await setup(t);
