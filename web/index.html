@@ -225,15 +225,13 @@
    */
   body[data-view="landing"] :is(#warnings, #map, main, #how, .how, #reposView) { display: none; }
   body[data-view="landing"] .hero { min-height: calc(100vh - 62px); min-height: calc(100svh - 62px); }
-  body[data-view="landing"] .scroll { display: none; }
   body[data-view="repos"] :is(.hero, #warnings, #map, main, #how, .how) { display: none; }
-  body[data-view="map"] :is(.hero, #reposView) { display: none; }
-  body[data-view="local"] #reposView { display: none; }
+  body[data-view="map"] :is(.hero, #reposView, #install) { display: none; }
+  body[data-view="local"] :is(#reposView, #install) { display: none; }
   .empty a:not(.cta) { color: var(--ink); }
   .empty .cta { margin-top: 18px; text-transform: none; }
 
   /* ── your repos ──────────────────────────────────────── */
-  #reposView { min-height: calc(100vh - 62px); }
   #reposView .section-head { border-top: 0; }
   .repo-table { width: 100%; border-collapse: collapse; background: color-mix(in srgb, var(--paper) 86%, transparent); }
   .repo-table th {
@@ -260,6 +258,45 @@
   .repos-note { margin: 0; padding: 14px var(--gutter); }
   .repos-empty h2 { margin: 0 0 12px; font: 700 40px/1 var(--display); text-transform: uppercase; filter: url(#px-sm); }
   .repos-empty p { color: var(--muted); margin: 0 auto 22px; max-width: 46ch; }
+  /* ── get started: steps, each with a terminal window ── */
+  #install .section-head { border-top: 1px solid var(--ink); }
+  .guide { list-style: none; margin: 0; padding: 0; background: color-mix(in srgb, var(--paper) 86%, transparent); }
+  .guide > li {
+    display: grid; grid-template-columns: minmax(220px, 360px) minmax(0, 1fr); gap: 28px;
+    padding: 28px var(--gutter); border-bottom: 1px solid var(--rule); align-items: start;
+  }
+  .guide .no { margin: 0 0 6px; font-size: 12px; color: var(--muted); }
+  .guide h3 { margin: 0 0 10px; font: 700 30px/1 var(--display); text-transform: uppercase; filter: url(#px-sm); }
+  .guide p { margin: 0 0 12px; color: var(--muted); max-width: 44ch; }
+  .guide p b { color: var(--ink); font-weight: 600; }
+  .guide p code { white-space: nowrap; }
+  .guide .needs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+  .guide .needs span { font: 11px var(--mono); text-transform: uppercase; border: 1px solid var(--ink); border-radius: 3px; padding: 2px 6px; }
+  @media (max-width: 760px) { .guide > li { grid-template-columns: 1fr; gap: 14px; } }
+
+  .term {
+    background: #0d0d0d; color: #ededed; border-radius: 8px; overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .18), 0 2px 6px rgba(0, 0, 0, .3); min-width: 0;
+  }
+  .term + .term { margin-top: 14px; }
+  .term-bar { display: flex; align-items: center; gap: 7px; padding: 10px 12px; background: #1c1c1c; border-bottom: 1px solid #2a2a2a; }
+  .term-bar i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .term-bar i:nth-child(1) { background: #ff5f57; }
+  .term-bar i:nth-child(2) { background: #febc2e; }
+  .term-bar i:nth-child(3) { background: #28c840; }
+  .term-bar span { flex: 1; text-align: center; font: 12px var(--mono); color: #9a9a9a; margin-right: 50px; }
+  .term-copy {
+    font: 11px var(--mono); text-transform: uppercase; color: #cfcfcf; background: transparent;
+    border: 1px solid #3a3a3a; border-radius: 3px; padding: 3px 7px; cursor: pointer;
+  }
+  .term-copy:hover { background: #ededed; color: #0d0d0d; }
+  .term pre {
+    margin: 0; padding: 14px 16px 16px; font: 14px/1.7 var(--mono); white-space: pre; overflow-x: auto;
+  }
+  .term .p { color: #7c7c7c; user-select: none; }
+  .term .c { color: #7c7c7c; }
+  .term .ok { color: #7ee07a; }
+
   @media (max-width: 760px) {
     .repo-table .hide-sm { display: none; }
     .bar nav .gh, .user span { display: none; }
@@ -319,6 +356,86 @@
     <a class="cta" id="connect" href="#">Connect a repository →</a>
   </div>
   <div id="repoList"></div>
+</section>
+
+<section id="install">
+  <div class="section-head mono"><span>(Get started)</span><span>Five minutes, one repo</span></div>
+  <ol class="guide">
+    <li>
+      <div>
+        <p class="no mono">(Step 1)</p>
+        <h3>Install</h3>
+        <div class="needs"><span>Claude Code</span><span>Node.js 20+</span><span>git</span></div>
+        <p>KenMap is a Claude Code plugin. Run these inside Claude Code — in the terminal or the VS Code extension. <b>Nothing to clone.</b></p>
+      </div>
+      <div class="term" data-copy="/plugin marketplace add nvlznn/kenmap&#10;/plugin install kenmap@noky">
+        <div class="term-bar"><i></i><i></i><i></i><span>Claude Code</span><button class="term-copy" type="button">Copy</button></div>
+        <pre><span class="p">›</span> /plugin marketplace add nvlznn/kenmap
+<span class="p">›</span> /plugin install kenmap@noky</pre>
+      </div>
+    </li>
+    <li>
+      <div>
+        <p class="no mono">(Step 2)</p>
+        <h3>Open your repo</h3>
+        <p>Start Claude Code at the root of the repo you want to measure. Any language works.</p>
+      </div>
+      <div class="term" data-copy="cd path/to/your-repo&#10;claude">
+        <div class="term-bar"><i></i><i></i><i></i><span>zsh</span><button class="term-copy" type="button">Copy</button></div>
+        <pre><span class="p">$</span> cd path/to/your-repo
+<span class="p">$</span> claude
+<span class="c"># or open the folder in VS Code and start Claude Code there</span></pre>
+      </div>
+    </li>
+    <li>
+      <div>
+        <p class="no mono">(Step 3)</p>
+        <h3>Map your modules</h3>
+        <p>KenMap reads your repo’s structure from git and proposes how to split it into modules, as a table. Adjust it in plain words; <b>nothing is written until you say yes.</b></p>
+      </div>
+      <div class="term" data-copy="/kenmap:comprehend init">
+        <div class="term-bar"><i></i><i></i><i></i><span>Claude Code</span><button class="term-copy" type="button">Copy</button></div>
+        <pre><span class="p">›</span> /kenmap:comprehend init
+<span class="c"># proposes modules → you confirm → writes .kenmap.json</span></pre>
+      </div>
+    </li>
+    <li>
+      <div>
+        <p class="no mono">(Step 4)</p>
+        <h3>Answer a question</h3>
+        <p>One short question at a time, about the module you know least. Answer in a few lines; you get a grade and the reference answer. <b>Three answers give a module its score.</b></p>
+      </div>
+      <div class="term" data-copy="/kenmap:comprehend">
+        <div class="term-bar"><i></i><i></i><i></i><span>Claude Code</span><button class="term-copy" type="button">Copy</button></div>
+        <pre><span class="p">›</span> /kenmap:comprehend
+<span class="c"># again whenever you like — it picks the weakest module</span></pre>
+      </div>
+    </li>
+    <li>
+      <div>
+        <p class="no mono">(Step 5)</p>
+        <h3>Publish &amp; connect</h3>
+        <p>Say “publish” and your answers go to a separate <code>kenmap-data</code> branch — your main branch is never touched. Then connect the repo here to see its map.</p>
+        <div id="guideCta"></div>
+      </div>
+      <div class="term" data-copy="publish">
+        <div class="term-bar"><i></i><i></i><i></i><span>Claude Code</span><button class="term-copy" type="button">Copy</button></div>
+        <pre><span class="p">›</span> publish
+<span class="c"># pushes to the kenmap-data branch, never force-pushes</span></pre>
+      </div>
+    </li>
+    <li>
+      <div>
+        <p class="no mono">(Later)</p>
+        <h3>Stay up to date</h3>
+        <p>Third-party marketplaces don’t update on their own. Run this to update, or turn on auto-update under <code>/plugin</code> → Marketplaces → noky.</p>
+      </div>
+      <div class="term" data-copy="/plugin marketplace update noky">
+        <div class="term-bar"><i></i><i></i><i></i><span>Claude Code</span><button class="term-copy" type="button">Copy</button></div>
+        <pre><span class="p">›</span> /plugin marketplace update noky</pre>
+      </div>
+    </li>
+  </ol>
 </section>
 
 <div id="warnings"></div>
@@ -784,11 +901,13 @@ function renderNav(view, me) {
     : SIGN_IN;
   const items = {
     local: `<a href="#map">Map</a><a href="#how">How to read</a>${star}<button class="cta" id="copy" type="button">Quiz me →</button>`,
-    landing: `${star}${SIGN_IN}`,
-    repos: `${star}${user}`,
+    landing: `<a href="#install">Install</a>${star}${SIGN_IN}`,
+    repos: `<a href="#install">Get started</a>${star}${user}`,
     map: `${me?.signedIn ? '<a href="/">← Your repos</a>' : ''}<a href="#how">How to read</a>${star}${user}`,
   };
   document.getElementById('nav').innerHTML = items[view];
+  document.getElementById('guideCta').innerHTML = view === 'repos'
+    ? `<a class="cta" href="${escapeHtml(connectUrl(me))}">Connect a repository →</a>` : SIGN_IN;
   document.getElementById('copy')?.addEventListener('click', () =>
     copy('/kenmap:comprehend', 'Copied /kenmap:comprehend — paste it into Claude Code'));
   document.getElementById('signOut')?.addEventListener('click', async () => {
@@ -817,13 +936,15 @@ async function whoAmI() {
 const ORG_HINT = 'Repos that belong to an organization: stay signed in as yourself, press Connect a repository, '
   + 'and pick the organization when GitHub asks where to install.';
 
+const connectUrl = (me) => `https://github.com/apps/${encodeURIComponent(me?.appSlug ?? '')}/installations/new`;
+
 const badgeUrl = (repo) =>
   `https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/${repo}/${REMOTE_BRANCH}/badge.json`;
 const mapUrl = (repo) => `${location.origin}/?repo=${repo}`;
 
 async function loadRepos(me) {
   document.getElementById('status').textContent = '(your repos)';
-  document.getElementById('connect').href = `https://github.com/apps/${encodeURIComponent(me.appSlug)}/installations/new`;
+  document.getElementById('connect').href = connectUrl(me);
   const host = document.getElementById('repoList');
   host.innerHTML = '<p class="repos-empty mono">Loading…</p>';
 
@@ -920,6 +1041,10 @@ async function loadMap(repo, me) {
 async function boot() {
   paintLegend();
   document.getElementById('toastOk').addEventListener('click', () => document.getElementById('toast').classList.remove('show'));
+  document.getElementById('install').addEventListener('click', (event) => {
+    const term = event.target.closest('.term-copy')?.closest('.term');
+    if (term) copy(term.dataset.copy, 'Copied — paste it into Claude Code');
+  });
   growMaze(document.getElementById('maze'));
   if (window.__REPORT__) {
     setView('local');
