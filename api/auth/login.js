@@ -1,4 +1,4 @@
-import { cookie, env, redirect, STATE_COOKIE } from '../_lib/session.js';
+import { clearCookie, cookie, env, PICK_ACCOUNT_COOKIE, readCookie, redirect, STATE_COOKIE } from '../_lib/session.js';
 
 /**
  * Sends the browser to GitHub to sign in. The random state rides along in a
@@ -13,5 +13,13 @@ export async function GET(request) {
   authorize.searchParams.set('client_id', config.GITHUB_CLIENT_ID);
   authorize.searchParams.set('state', state);
   authorize.searchParams.set('redirect_uri', `${origin}/api/auth/callback`);
-  return redirect(authorize.href, { cookies: [cookie(STATE_COOKIE, state, 10 * 60)] });
+
+  const cookies = [cookie(STATE_COOKIE, state, 10 * 60)];
+  // Right after a sign-out, let the user pick an account: GitHub otherwise
+  // reuses whichever one it is signed in as, with no way to switch.
+  if (readCookie(request, PICK_ACCOUNT_COOKIE)) {
+    authorize.searchParams.set('prompt', 'select_account');
+    cookies.push(clearCookie(PICK_ACCOUNT_COOKIE));
+  }
+  return redirect(authorize.href, { cookies });
 }

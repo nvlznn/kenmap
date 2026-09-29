@@ -257,6 +257,7 @@
   .copy { font: 11px var(--mono); text-transform: uppercase; background: var(--paper); border: 1px solid var(--ink); border-radius: 3px; padding: 4px 7px; cursor: pointer; }
   .copy:hover { background: var(--ink); color: var(--paper); }
   .repos-empty { padding: 72px var(--gutter); text-align: center; }
+  .repos-note { margin: 0; padding: 14px var(--gutter); }
   .repos-empty h2 { margin: 0 0 12px; font: 700 40px/1 var(--display); text-transform: uppercase; filter: url(#px-sm); }
   .repos-empty p { color: var(--muted); margin: 0 auto 22px; max-width: 46ch; }
   @media (max-width: 760px) {
@@ -811,6 +812,11 @@ async function whoAmI() {
   return { signedIn: false };
 }
 
+// Organizations cannot sign in, only people can: an org's repos are connected
+// by installing the app on the org while signed in as one of its members.
+const ORG_HINT = 'Repos that belong to an organization: stay signed in as yourself, press Connect a repository, '
+  + 'and pick the organization when GitHub asks where to install.';
+
 const badgeUrl = (repo) =>
   `https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/${repo}/${REMOTE_BRANCH}/badge.json`;
 const mapUrl = (repo) => `${location.origin}/?repo=${repo}`;
@@ -836,6 +842,7 @@ async function loadRepos(me) {
     host.innerHTML = `<div class="repos-empty">
       <h2>No repos yet</h2>
       <p>Connect a repository to see its map here. KenMap only asks to read its contents — nothing is ever written.</p>
+      <p>${ORG_HINT}</p>
       <a class="cta" href="${escapeHtml(document.getElementById('connect').href)}">Connect a repository →</a></div>`;
     return;
   }
@@ -863,7 +870,8 @@ async function loadRepos(me) {
   host.innerHTML = `<table class="repo-table">
     <thead><tr><th>Repo</th><th>Understood</th><th class="num">Modules scored</th>
       <th class="num hide-sm">Published</th><th class="hide-sm">README badge</th></tr></thead>
-    <tbody>${body.repos.map(row).join('')}</tbody></table>`;
+    <tbody>${body.repos.map(row).join('')}</tbody></table>
+    <p class="hint repos-note">${ORG_HINT}</p>`;
 
   host.querySelector('tbody').addEventListener('click', (event) => {
     const button = event.target.closest('.copy');

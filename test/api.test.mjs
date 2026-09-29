@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { validRepo } from '../api/_lib/github.js';
-import { getSession, seal, SESSION_COOKIE, STATE_COOKIE, unseal } from '../api/_lib/session.js';
+import { getSession, PICK_ACCOUNT_COOKIE, seal, SESSION_COOKIE, STATE_COOKIE, unseal } from '../api/_lib/session.js';
 import { GET as callback } from '../api/auth/callback.js';
 import { GET as login } from '../api/auth/login.js';
+import { POST as logout } from '../api/auth/logout.js';
 import { GET as me } from '../api/me.js';
 import { GET as repos } from '../api/repos.js';
 import { GET as report } from '../api/report.js';
@@ -74,6 +75,20 @@ test('sign-in sends the browser to GitHub with a state it also remembers in a co
   assert.equal(to.searchParams.get('redirect_uri'), `${SITE}/api/auth/callback`);
   assert.equal(to.searchParams.get('state'), cookieValue(res, STATE_COOKIE));
   assert.match(setCookies(res)[0], /HttpOnly; Secure; SameSite=Lax/);
+});
+
+test('after signing out, the next sign-in asks GitHub to show its account picker, once', async () => {
+  const out = await logout();
+  assert.equal(cookieValue(out, SESSION_COOKIE), '', 'the session is cleared');
+  assert.equal(cookieValue(out, PICK_ACCOUNT_COOKIE), '1');
+
+  const next = await login(request('/api/auth/login', { [PICK_ACCOUNT_COOKIE]: '1' }));
+  assert.equal(new URL(next.headers.get('location')).searchParams.get('prompt'), 'select_account');
+  assert.equal(cookieValue(next, PICK_ACCOUNT_COOKIE), '', 'the marker is used up');
+
+  const plain = await login(request('/api/auth/login'));
+  assert.equal(new URL(plain.headers.get('location')).searchParams.get('prompt'), null,
+    'an ordinary sign-in goes straight through');
 });
 
 test('a callback whose state does not match the cookie is refused before GitHub is asked anything', async (t) => {

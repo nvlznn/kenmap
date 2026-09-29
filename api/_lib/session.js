@@ -7,6 +7,8 @@ import { requestToken, tokenFields } from './github.js';
 
 export const SESSION_COOKIE = 'kenmap_session';
 export const STATE_COOKIE = 'kenmap_state';
+/** Set on sign-out, so the next sign-in shows GitHub's account picker. */
+export const PICK_ACCOUNT_COOKIE = 'kenmap_pick_account';
 const SESSION_DAYS = 30;
 /** Refresh a little before GitHub's own expiry, so a request never races it. */
 const REFRESH_MARGIN_MS = 5 * 60 * 1000;
