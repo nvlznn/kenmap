@@ -135,6 +135,7 @@ export async function report(repoRoot, { now = new Date() } = {}) {
 
   return {
     generatedAt: now.toISOString(),
+    name: path.basename(scanned.repoRoot),
     commit: scanned.commit,
     total,
     anyQuizzed: scored.some((m) => m.quizzed),

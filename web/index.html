@@ -6,40 +6,57 @@
 <title>KenMap</title>
 <style>
   :root {
-    --bg: #fbfbfa; --panel: #ffffff; --ink: #1b1b1a; --muted: #6b6b68;
-    --line: #e2e2de; --shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06);
-    --grey: #c3c3bf;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #17181a; --panel: #1f2023; --ink: #ececeb; --muted: #9a9a96;
-      --line: #2e3034; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
-      --grey: #4a4c50;
-    }
+    --bg: #1c1d20; --panel: #222327; --ink: #e8e8e6; --muted: #9a9da3;
+    --line: #313338; --edge: #7d8188; --edge-hi: #d6d8dc; --node-ink: #18191b;
   }
   * { box-sizing: border-box; }
+  html, body { height: 100%; }
   body {
-    margin: 0; background: var(--bg); color: var(--ink);
-    font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+    margin: 0; display: flex; flex-direction: column;
+    background: var(--bg); color: var(--ink);
+    font: 14px/1.5 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
   }
   header {
-    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
-    padding: 20px 24px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    padding: 14px 24px; border-bottom: 1px solid var(--line);
   }
-  h1 { font-size: 17px; margin: 0; letter-spacing: -.01em; }
+  h1 { font-size: 16px; margin: 0; letter-spacing: -.01em; }
   h1 span { color: var(--muted); font-weight: 400; }
-  .total { font-size: 30px; font-weight: 600; letter-spacing: -.02em; margin-left: auto; }
-  .total small { font-size: 13px; font-weight: 400; color: var(--muted); display: block; text-align: right; }
-  main { display: grid; grid-template-columns: 1fr 320px; min-height: calc(100vh - 66px); }
-  @media (max-width: 760px) { main { grid-template-columns: 1fr; } aside { border-left: none !important; border-top: 1px solid var(--line); } }
+  .legend { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .legend .bar { width: 140px; height: 8px; border-radius: 4px; }
+  .total { margin-left: auto; text-align: right; font-size: 26px; font-weight: 600; letter-spacing: -.02em; }
+  .total small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+  main { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 320px; }
+  @media (max-width: 760px) {
+    main { grid-template-columns: 1fr; }
+    aside { border-left: none !important; border-top: 1px solid var(--line); }
+  }
+  #graph { min-height: 480px; }
   svg { width: 100%; height: 100%; display: block; }
+
+  .edge path, .edge line { fill: none; stroke: var(--edge); stroke-width: 1; }
+  .edge text {
+    font-size: 8.5px; letter-spacing: .06em; fill: var(--muted);
+    paint-order: stroke; stroke: var(--bg); stroke-width: 3px;
+  }
+  .edge.imports text { opacity: 0; }
+  .edge.active path, .edge.active line { stroke: var(--edge-hi); }
+  .edge.active text { opacity: 1; fill: var(--edge-hi); }
+  .edge.active.fwd path, .edge.active.fwd line { marker-end: url(#arrow-hi); }
+  .edge.active.bwd path { marker-start: url(#arrow-hi); }
+  .dimmed .edge:not(.active) { opacity: .1 !important; }
+  .edge.active { opacity: 1 !important; }
+  .dimmed .node:not(.active) { opacity: .35; }
+
   .node { cursor: pointer; }
-  .node text { font-size: 12px; font-weight: 500; pointer-events: none; }
-  .node .pct { font-size: 11px; opacity: .75; }
-  .node circle { transition: stroke-width .12s ease; }
-  .node.selected circle { stroke: var(--ink); stroke-width: 3; }
-  aside { border-left: 1px solid var(--line); padding: 20px; background: var(--panel); }
-  aside h2 { font-size: 15px; margin: 0 0 4px; }
+  .node circle { transition: filter .12s ease; }
+  .node:hover circle { filter: brightness(1.08); }
+  .node.selected circle { stroke: #fff; stroke-width: 2.5; }
+  .node text { fill: var(--node-ink); font-size: 12px; font-weight: 500; pointer-events: none; }
+  .node text.pct { font-size: 10px; font-weight: 600; opacity: .8; }
+
+  aside { border-left: 1px solid var(--line); padding: 20px; background: var(--panel); overflow-y: auto; }
+  aside h2 { font-size: 15px; margin: 0 0 4px; word-break: break-word; }
   .hint { color: var(--muted); font-size: 13px; }
   .row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
   .row span:first-child { color: var(--muted); }
@@ -49,14 +66,14 @@
   .answer p { margin: 6px 0 0; color: var(--muted); }
   code { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; font-size: 12px; }
   .warn { margin: 12px 24px 0; padding: 10px 12px; border-radius: 8px; font-size: 13px;
-          background: #fff5d6; color: #6b4e00; border: 1px solid #f0dda0; }
-  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .warn { background: #3a3000; color: #f0dda0; border-color: #5c4d00; } }
+          background: #3a3000; color: #f0dda0; border: 1px solid #5c4d00; }
   .empty { padding: 48px 24px; color: var(--muted); }
 </style>
 </head>
 <body>
 <header>
   <h1 id="repo">KenMap <span>— comprehension map</span></h1>
+  <div class="legend"><span>0%</span><div class="bar" id="legendBar"></div><span>100%</span><span>· not quizzed counts as 0%</span></div>
   <div class="total"><span id="total">—</span><small id="totalNote">no answers recorded yet</small></div>
 </header>
 <div id="warnings"></div>
@@ -64,62 +81,109 @@
   <div id="graph"></div>
   <aside>
     <h2 id="panelTitle">Pick a module</h2>
-    <p class="hint" id="panelHint">Node size is lines of code. Colour is how much of it you can still explain.</p>
+    <p class="hint" id="panelHint">Colour runs red to green with how much of the module you can still explain. Size is lines of code.</p>
     <div id="panelBody"></div>
   </aside>
 </main>
 <script>
 const REMOTE_BRANCH = 'kenmap-data';
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
-function colorFor(score, quizzed) {
-  if (!quizzed) return getComputedStyle(document.documentElement).getPropertyValue('--grey').trim();
-  const stops = [[0, [211, 74, 62]], [0.5, [214, 166, 48]], [1, [58, 158, 94]]];
-  let [a, b] = [stops[0], stops[1]];
-  if (score > 0.5) [a, b] = [stops[1], stops[2]];
-  const t = (score - a[0]) / (b[0] - a[0] || 1);
-  const mix = a[1].map((v, i) => Math.round(v + (b[1][i] - v) * t));
-  return `rgb(${mix.join(',')})`;
+/** One hue sweep, red (0) to green (1). Never quizzed is 0, so also red. */
+function colorFor(score) {
+  const s = Math.max(0, Math.min(1, Number(score) || 0));
+  return `hsl(${Math.round(120 * s)} 55% 63%)`;
 }
 
-/** Layered by dependency depth: things other modules lean on sink to the bottom. */
-function layout(modules, edges, width, height) {
-  const depth = new Map(modules.map((m) => [m.id, 0]));
-  for (let pass = 0; pass < modules.length; pass++) {
-    let moved = false;
-    for (const e of edges) {
-      const want = depth.get(e.from) + 1;
-      if (depth.has(e.to) && depth.get(e.to) < want) { depth.set(e.to, want); moved = true; }
-    }
-    if (!moved) break;
+function paintLegend() {
+  const stops = [0, 0.25, 0.5, 0.75, 1].map((s) => `${colorFor(s)} ${s * 100}%`);
+  document.getElementById('legendBar').style.background = `linear-gradient(to right, ${stops.join(', ')})`;
+}
+
+/**
+ * Root on top, modules in one row beneath it — the containment tree, read the
+ * same way as any file tree. Modules are ordered so ones that import each
+ * other sit side by side, which keeps the import arcs under the row short.
+ */
+function layout(modules, edges, sizes) {
+  const ids = modules.map((m) => m.id);
+  const neighbours = new Map(ids.map((id) => [id, []]));
+  for (const e of edges) {
+    if (!neighbours.has(e.from) || !neighbours.has(e.to)) continue;
+    neighbours.get(e.from).push([e.to, e.weight]);
+    neighbours.get(e.to).push([e.from, e.weight]);
   }
-  const rows = new Map();
-  for (const m of modules) {
-    const d = depth.get(m.id);
-    if (!rows.has(d)) rows.set(d, []);
-    rows.get(d).push(m);
+  let order = [...ids];
+  for (let pass = 0; pass < 12; pass++) {
+    const at = new Map(order.map((id, i) => [id, i]));
+    const pull = new Map(order.map((id) => {
+      const ns = neighbours.get(id);
+      if (!ns.length) return [id, at.get(id)];
+      let sum = 0, weight = 0;
+      for (const [n, w] of ns) { sum += at.get(n) * w; weight += w; }
+      return [id, (sum / weight + at.get(id)) / 2];
+    }));
+    order = [...order].sort((a, b) => pull.get(a) - pull.get(b) || at.get(a) - at.get(b));
   }
-  const ranks = [...rows.keys()].sort((a, b) => a - b);
+
+  const gap = 34;
+  const row = 250;
   const positions = new Map();
-  const rowGap = height / (ranks.length + 1);
-  ranks.forEach((rank, i) => {
-    const row = rows.get(rank);
-    const colGap = width / (row.length + 1);
-    row.forEach((m, j) => positions.set(m.id, { x: colGap * (j + 1), y: rowGap * (i + 1) }));
+  let x = 0;
+  order.forEach((id, i) => {
+    if (i > 0) x += sizes.get(order[i - 1]) + gap + sizes.get(id);
+    positions.set(id, { x, y: row });
   });
+  const shift = x / 2;
+  for (const p of positions.values()) p.x -= shift;
+  positions.set('__root__', { x: 0, y: 0 });
   return positions;
 }
 
-function render(report) {
-  document.getElementById('repo').innerHTML =
-    `KenMap <span>— ${report.repo ? report.repo : 'comprehension map'}</span>`;
-  const pct = Math.round(report.total * 100);
-  document.getElementById('total').textContent = report.anyQuizzed ? pct + '%' : '—';
-  document.getElementById('totalNote').textContent = report.anyQuizzed
-    ? 'weighted by lines of code'
-    : 'no answers recorded yet';
+/** Folds A→B and B→A into one arc so a mutual dependency is not drawn twice. */
+function pairEdges(edges) {
+  const pairs = new Map();
+  for (const e of edges) {
+    const key = [e.from, e.to].sort().join('\u0000');
+    const pair = pairs.get(key) ?? { a: e.from, b: e.to, forward: 0, backward: 0 };
+    if (e.from === pair.a) pair.forward += e.weight; else pair.backward += e.weight;
+    pairs.set(key, pair);
+  }
+  return [...pairs.values()];
+}
 
-  const warnBox = document.getElementById('warnings');
-  warnBox.innerHTML = (report.warnings || [])
+/** Breaks a label to fit inside a circle, hyphenating mid-word when it has to. */
+function wrapLabel(text, r) {
+  const perLine = Math.max(4, Math.floor((r * 1.55) / 6.9));
+  const lines = [];
+  let rest = String(text);
+  while (rest && lines.length < 3) {
+    if (rest.length <= perLine) { lines.push(rest); rest = ''; break; }
+    const cut = Math.max(rest.lastIndexOf('_', perLine - 1), rest.lastIndexOf('.', perLine - 1),
+      rest.lastIndexOf('/', perLine - 1), rest.lastIndexOf('-', perLine - 1));
+    if (cut >= 3) { lines.push(rest.slice(0, cut + 1)); rest = rest.slice(cut + 1); }
+    else { lines.push(rest.slice(0, perLine - 1) + '-'); rest = rest.slice(perLine - 1); }
+  }
+  if (rest) lines[lines.length - 1] = lines[lines.length - 1].replace(/-$/, '').slice(0, perLine - 1) + '…';
+  return lines;
+}
+
+function unit(dx, dy) {
+  const len = Math.hypot(dx, dy) || 1;
+  return [dx / len, dy / len];
+}
+
+/** Keeps edge labels reading left to right, whichever way the edge points. */
+function upright(deg) {
+  return deg > 90 || deg < -90 ? deg + 180 : deg;
+}
+
+function render(report) {
+  const title = report.repo || report.name || 'repo';
+  document.getElementById('repo').innerHTML = `KenMap <span>— ${escapeHtml(title)}</span>`;
+  document.getElementById('total').textContent = report.anyQuizzed ? Math.round(report.total * 100) + '%' : '—';
+  document.getElementById('totalNote').textContent = report.anyQuizzed ? 'weighted by lines of code' : 'no answers recorded yet';
+  document.getElementById('warnings').innerHTML = (report.warnings || [])
     .map((w) => `<div class="warn">${escapeHtml(w)}</div>`).join('');
 
   const host = document.getElementById('graph');
@@ -127,42 +191,139 @@ function render(report) {
     host.innerHTML = '<div class="empty">No modules configured yet — run <code>/comprehend init</code>.</div>';
     return;
   }
-  const width = Math.max(host.clientWidth || 720, 360);
-  const height = Math.max(host.clientHeight || 520, 420);
-  const positions = layout(report.modules, report.edges || [], width, height);
+
+  const edges = (report.edges || []).filter((e) => e.from !== e.to);
   const maxLoc = Math.max(...report.modules.map((m) => m.loc), 1);
-  const radius = (loc) => 22 + 44 * Math.sqrt(loc / maxLoc);
+  const sizes = new Map(report.modules.map((m) => [m.id, 32 + 14 * Math.sqrt(m.loc / maxLoc)]));
+  sizes.set('__root__', 46);
+  const positions = layout(report.modules, edges, sizes);
 
-  const edgeSvg = (report.edges || []).map((e) => {
-    const a = positions.get(e.from); const b = positions.get(e.to);
-    if (!a || !b) return '';
-    const w = Math.min(6, 1 + Math.log2(e.weight + 1));
-    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="var(--line)"
-            stroke-width="${w}" marker-end="url(#arrow)"><title>${escapeHtml(e.from)} → ${escapeHtml(e.to)} (${e.weight})</title></line>`;
-  }).join('');
+  const parts = [];
+  const bounds = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
+  const grow = (x, y) => {
+    bounds.minX = Math.min(bounds.minX, x); bounds.maxX = Math.max(bounds.maxX, x);
+    bounds.minY = Math.min(bounds.minY, y); bounds.maxY = Math.max(bounds.maxY, y);
+  };
+  for (const [id, p] of positions) { grow(p.x - sizes.get(id), p.y - sizes.get(id)); grow(p.x + sizes.get(id), p.y + sizes.get(id)); }
 
-  const nodeSvg = report.modules.map((m) => {
-    const p = positions.get(m.id); const r = radius(m.loc);
-    const label = m.quizzed ? Math.round(m.score * 100) + '%' : 'not quizzed';
-    return `<g class="node" data-id="${escapeHtml(m.id)}" transform="translate(${p.x},${p.y})">
-      <circle r="${r}" fill="${colorFor(m.score, m.quizzed)}" stroke="var(--panel)" stroke-width="2"></circle>
-      <text text-anchor="middle" y="-2" fill="#fff">${escapeHtml(m.id)}</text>
-      <text text-anchor="middle" y="14" class="pct" fill="#fff">${label}</text>
-    </g>`;
-  }).join('');
+  for (const m of report.modules) {
+    const a = positions.get('__root__');
+    const b = positions.get(m.id);
+    const [ux, uy] = unit(b.x - a.x, b.y - a.y);
+    const x1 = a.x + ux * (sizes.get('__root__') + 2), y1 = a.y + uy * (sizes.get('__root__') + 2);
+    const x2 = b.x - ux * (sizes.get(m.id) + 3), y2 = b.y - uy * (sizes.get(m.id) + 3);
+    const deg = upright((Math.atan2(uy, ux) * 180) / Math.PI);
+    const lx = x1 + (x2 - x1) * 0.55, ly = y1 + (y2 - y1) * 0.55;
+    parts.push(`<g class="edge contains fwd" data-a="__root__" data-b="${escapeHtml(m.id)}">
+      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" marker-end="url(#arrow)"></line>
+      <text text-anchor="middle" transform="translate(${lx},${ly}) rotate(${deg})" dy="-3">CONTAINS</text></g>`);
+  }
 
-  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}">
-    <defs><marker id="arrow" viewBox="0 0 10 10" refX="28" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="var(--line)"></path></marker></defs>
-    ${edgeSvg}${nodeSvg}</svg>`;
+  // Imports hang below the row as arcs, deeper the farther apart the two
+  // modules sit, so they nest instead of crossing the containment spokes.
+  const maxWeight = Math.max(1, ...edges.map((e) => e.weight));
+  for (const pair of pairEdges(edges)) {
+    const a = positions.get(pair.a), b = positions.get(pair.b);
+    if (!a || !b) continue;
+    const span = Math.abs(b.x - a.x);
+    const c = { x: (a.x + b.x) / 2, y: a.y + 40 + span * 0.42 };
+    const [sx, sy] = unit(c.x - a.x, c.y - a.y);
+    const [ex, ey] = unit(b.x - c.x, b.y - c.y);
+    const p0 = { x: a.x + sx * (sizes.get(pair.a) + 3), y: a.y + sy * (sizes.get(pair.a) + 3) };
+    const p2 = { x: b.x - ex * (sizes.get(pair.b) + 3), y: b.y - ey * (sizes.get(pair.b) + 3) };
+    const apex = { x: 0.25 * p0.x + 0.5 * c.x + 0.25 * p2.x, y: 0.25 * p0.y + 0.5 * c.y + 0.25 * p2.y };
+    grow(apex.x, apex.y + 14);
+    const weight = pair.forward + pair.backward;
+    const opacity = (0.3 + 0.45 * Math.sqrt(weight / maxWeight)).toFixed(2);
+    const label = pair.forward && pair.backward
+      ? `IMPORTS ⇄ ${pair.forward}/${pair.backward}`
+      : `IMPORTS ×${weight}`;
+    const title = [pair.forward ? `${pair.a} imports ${pair.b} ${pair.forward}×` : '',
+      pair.backward ? `${pair.b} imports ${pair.a} ${pair.backward}×` : ''].filter(Boolean).join('\n');
+    const direction = `${pair.forward ? ' fwd' : ''}${pair.backward ? ' bwd' : ''}`;
+    parts.push(`<g class="edge imports${direction}" data-a="${escapeHtml(pair.a)}" data-b="${escapeHtml(pair.b)}" style="opacity:${opacity}">
+      <title>${escapeHtml(title)}</title>
+      <path d="M${p0.x},${p0.y} Q${c.x},${c.y} ${p2.x},${p2.y}"
+        ${pair.forward ? 'marker-end="url(#arrow)"' : ''} ${pair.backward ? 'marker-start="url(#arrow)"' : ''}></path>
+      <text text-anchor="middle" x="${apex.x}" y="${apex.y}" dy="12">${escapeHtml(label)}</text></g>`);
+  }
 
-  host.querySelectorAll('.node').forEach((node) => {
-    node.addEventListener('click', () => {
-      host.querySelectorAll('.node').forEach((n) => n.classList.remove('selected'));
-      node.classList.add('selected');
-      showModule(report.modules.find((m) => m.id === node.dataset.id));
+  const nodes = [{ id: '__root__', label: title, score: report.total, quizzed: report.anyQuizzed },
+    ...report.modules.map((m) => ({ id: m.id, label: m.id, score: m.score, quizzed: m.quizzed }))];
+  for (const node of nodes) {
+    const p = positions.get(node.id);
+    const r = sizes.get(node.id);
+    const lines = wrapLabel(node.label, r);
+    const pct = node.quizzed ? Math.round(node.score * 100) + '%' : '—';
+    const total = lines.length + 1;
+    const first = -((total - 1) * 13) / 2 + 4;
+    const text = lines.map((line, i) =>
+      `<text text-anchor="middle" y="${first + i * 13}">${escapeHtml(line)}</text>`).join('')
+      + `<text class="pct" text-anchor="middle" y="${first + lines.length * 13 + 1}">${pct}</text>`;
+    parts.push(`<g class="node" data-id="${escapeHtml(node.id)}" transform="translate(${p.x},${p.y})">
+      <title>${escapeHtml(node.label)} — ${node.quizzed ? pct : 'not quizzed'}</title>
+      <circle r="${r}" fill="${colorFor(node.quizzed ? node.score : 0)}"></circle>${text}</g>`);
+  }
+
+  // A two-module repo should not blow its circles up to fill the screen.
+  const pad = 40;
+  let width = bounds.maxX - bounds.minX + pad * 2;
+  let height = bounds.maxY - bounds.minY + pad * 2;
+  const minX = bounds.minX - pad - Math.max(0, 900 - width) / 2;
+  const minY = bounds.minY - pad - Math.max(0, 560 - height) / 2;
+  width = Math.max(width, 900);
+  height = Math.max(height, 560);
+  host.innerHTML = `<svg viewBox="${minX} ${minY} ${width} ${height}" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,1 L10,5 L0,9 z" fill="#7d8188"></path></marker>
+      <marker id="arrow-hi" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,1 L10,5 L0,9 z" fill="#d6d8dc"></path></marker>
+    </defs>
+    <g id="scene">${parts.join('')}</g></svg>`;
+
+  const scene = host.querySelector('#scene');
+  const clear = () => {
+    scene.classList.remove('dimmed');
+    scene.querySelectorAll('.active, .selected').forEach((el) => el.classList.remove('active', 'selected'));
+  };
+  host.querySelector('svg').addEventListener('click', (event) => {
+    const node = event.target.closest('.node');
+    clear();
+    if (!node) return resetPanel();
+    const id = node.dataset.id;
+    node.classList.add('selected', 'active');
+    scene.classList.add('dimmed');
+    scene.querySelectorAll('.edge').forEach((edge) => {
+      if (edge.dataset.a !== id && edge.dataset.b !== id) return;
+      edge.classList.add('active');
+      const other = edge.dataset.a === id ? edge.dataset.b : edge.dataset.a;
+      scene.querySelector(`.node[data-id="${CSS.escape(other)}"]`)?.classList.add('active');
     });
+    if (id === '__root__') showRepo(report, title);
+    else showModule(report.modules.find((m) => m.id === id));
   });
+}
+
+function resetPanel() {
+  document.getElementById('panelTitle').textContent = 'Pick a module';
+  document.getElementById('panelHint').textContent =
+    'Colour runs red to green with how much of the module you can still explain. Size is lines of code.';
+  document.getElementById('panelBody').innerHTML = '';
+}
+
+function showRepo(report, title) {
+  const quizzed = report.modules.filter((m) => m.quizzed).length;
+  document.getElementById('panelTitle').textContent = title;
+  document.getElementById('panelHint').textContent = 'The whole repo, weighted by lines of code.';
+  const rows = [
+    ['score', report.anyQuizzed ? Math.round(report.total * 100) + '%' : '—'],
+    ['modules quizzed', `${quizzed} of ${report.modules.length}`],
+    ['lines in modules', report.modules.reduce((n, m) => n + m.loc, 0).toLocaleString()],
+  ];
+  if (report.unassigned) rows.push(['lines outside any module', report.unassigned.loc.toLocaleString()]);
+  document.getElementById('panelBody').innerHTML =
+    rows.map(([k, v]) => `<div class="row"><span>${k}</span><span>${v}</span></div>`).join('');
 }
 
 function showModule(module) {
@@ -200,6 +361,7 @@ function escapeHtml(s) {
 }
 
 async function boot() {
+  paintLegend();
   if (window.__REPORT__) return render(window.__REPORT__);
 
   const repo = new URLSearchParams(location.search).get('repo');
@@ -226,7 +388,6 @@ async function boot() {
 }
 
 boot();
-addEventListener('resize', () => { if (window.__REPORT__) render(window.__REPORT__); });
 </script>
 </body>
 </html>
