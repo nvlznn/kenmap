@@ -141,8 +141,15 @@ export function format(result) {
         `- [${QUESTION_TYPES.find((t) => t.id === p.type)?.label ?? p.type}] ${p.question}`).join('\n')}`
       : '之前問過：無',
   ];
-  const body = result.files.map((f) =>
-    `\n── ${f.path}${f.importedBy ? `（被其他模組 import ${f.importedBy} 次）` : ''}${f.truncated ? '（截斷）' : ''} ──\n${f.text}`);
+  // Absolute paths and line numbers are printed here so a question that
+  // points at code can cite its exact location by copying, not by counting.
+  const body = result.files.map((f) => {
+    const lines = f.text.split('\n');
+    const width = String(lines.length).length;
+    const numbered = lines.map((line, i) => `${String(i + 1).padStart(width)}│${line}`).join('\n');
+    const where = path.join(result.repoRoot, f.path);
+    return `\n── ${where}${f.importedBy ? `（被其他模組 import ${f.importedBy} 次）` : ''}${f.truncated ? '（截斷）' : ''} ──\n${numbered}`;
+  });
   return [...head, ...body].join('\n');
 }
 

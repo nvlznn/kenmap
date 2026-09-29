@@ -186,3 +186,12 @@ test('an unknown question type is refused', async (t) => {
     /unknown question type "trivia"/,
   );
 });
+
+test('code comes with absolute paths and line numbers so questions can cite an exact location', async (t) => {
+  const repo = await setup(t);
+  const result = await prepare(repo.path, { target: 'tiny' });
+  const out = format(result);
+  assert.ok(out.includes(`── ${path.join(result.repoRoot, 'lib/tiny/a.dart')}`), 'absolute path in the file header');
+  assert.match(out, /^1│\/\/ tiny 0$/m, 'first line is numbered 1');
+  assert.match(out, /^5│\/\/ tiny 4$/m);
+});
