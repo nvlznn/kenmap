@@ -366,12 +366,13 @@
         <p class="no mono">(Step 1)</p>
         <h3>Install</h3>
         <div class="needs"><span>Claude Code</span><span>Node.js 20+</span><span>git</span></div>
-        <p>KenMap is a Claude Code plugin. Run these inside Claude Code — in the terminal or the VS Code extension. <b>Nothing to clone.</b></p>
+        <p>KenMap is a Claude Code plugin. Paste these into your terminal. <b>Nothing to clone.</b></p>
+        <p>Already inside Claude Code? Type <code>/plugin marketplace add nvlznn/kenmap</code> and <code>/plugin install kenmap@noky</code> there instead.</p>
       </div>
-      <div class="term" data-copy="/plugin marketplace add nvlznn/kenmap&#10;/plugin install kenmap@noky">
-        <div class="term-bar"><i></i><i></i><i></i><span>Claude Code</span><button class="term-copy" type="button">Copy</button></div>
-        <pre><span class="p">›</span> /plugin marketplace add nvlznn/kenmap
-<span class="p">›</span> /plugin install kenmap@noky</pre>
+      <div class="term" data-copy="claude plugin marketplace add nvlznn/kenmap&#10;claude plugin install kenmap@noky">
+        <div class="term-bar"><i></i><i></i><i></i><span>zsh</span><button class="term-copy" type="button">Copy</button></div>
+        <pre><span class="p">$</span> claude plugin marketplace add nvlznn/kenmap
+<span class="p">$</span> claude plugin install kenmap@noky</pre>
       </div>
     </li>
     <li>
@@ -394,7 +395,7 @@
         <p>KenMap reads your repo’s structure from git and proposes how to split it into modules, as a table. Adjust it in plain words; <b>nothing is written until you say yes.</b></p>
       </div>
       <div class="term" data-copy="/kenmap:comprehend init">
-        <div class="term-bar"><i></i><i></i><i></i><span>Claude Code</span><button class="term-copy" type="button">Copy</button></div>
+        <div class="term-bar"><i></i><i></i><i></i><span>zsh</span><button class="term-copy" type="button">Copy</button></div>
         <pre><span class="p">›</span> /kenmap:comprehend init
 <span class="c"># proposes modules → you confirm → writes .kenmap.json</span></pre>
       </div>
@@ -406,7 +407,7 @@
         <p>One short question at a time, about the module you know least. Answer in a few lines; you get a grade and the reference answer. <b>Three answers give a module its score.</b></p>
       </div>
       <div class="term" data-copy="/kenmap:comprehend">
-        <div class="term-bar"><i></i><i></i><i></i><span>Claude Code</span><button class="term-copy" type="button">Copy</button></div>
+        <div class="term-bar"><i></i><i></i><i></i><span>zsh</span><button class="term-copy" type="button">Copy</button></div>
         <pre><span class="p">›</span> /kenmap:comprehend
 <span class="c"># again whenever you like — it picks the weakest module</span></pre>
       </div>
@@ -428,11 +429,11 @@
       <div>
         <p class="no mono">(Later)</p>
         <h3>Stay up to date</h3>
-        <p>Third-party marketplaces don’t update on their own. Run this to update, or turn on auto-update under <code>/plugin</code> → Marketplaces → noky.</p>
+        <p>Third-party marketplaces don’t update on their own. Run this to update, or inside Claude Code type <code>/plugin marketplace update noky</code>. To update automatically, turn on auto-update under <code>/plugin</code> → Marketplaces → noky.</p>
       </div>
-      <div class="term" data-copy="/plugin marketplace update noky">
-        <div class="term-bar"><i></i><i></i><i></i><span>Claude Code</span><button class="term-copy" type="button">Copy</button></div>
-        <pre><span class="p">›</span> /plugin marketplace update noky</pre>
+      <div class="term" data-copy="claude plugin update kenmap@noky">
+        <div class="term-bar"><i></i><i></i><i></i><span>zsh</span><button class="term-copy" type="button">Copy</button></div>
+        <pre><span class="p">$</span> claude plugin update kenmap@noky</pre>
       </div>
     </li>
   </ol>

@@ -10,12 +10,14 @@
 
 ## 安裝
 
-KenMap 是一個 Claude Code plugin。需要 Node.js 20 以上和 git。在 Claude Code 裡：
+KenMap 是一個 Claude Code plugin。需要 Node.js 20 以上和 git。在終端機裡：
 
+```bash
+claude plugin marketplace add nvlznn/kenmap
+claude plugin install kenmap@noky
 ```
-/plugin marketplace add nvlznn/kenmap
-/plugin install kenmap@noky
-```
+
+已經在 Claude Code 裡的話，改打 `/plugin marketplace add nvlznn/kenmap` 和 `/plugin install kenmap@noky`。
 
 接著在任何 repo 裡：
 
@@ -35,7 +37,7 @@ KenMap 是一個 Claude Code plugin。需要 Node.js 20 以上和 git。在 Clau
 
 第三方 marketplace 預設不會自動更新。擇一：
 
-- 手動：`/plugin marketplace update noky`
+- 手動：終端機裡 `claude plugin update kenmap@noky`，或在 Claude Code 裡 `/plugin marketplace update noky`
 - 自動：`/plugin` → Marketplaces → noky → Enable auto-update
 
 ## 分數怎麼算

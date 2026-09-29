@@ -24,14 +24,16 @@
 
 KenMap 是一個 Claude Code plugin，不是獨立 app。需要 Node.js 20 以上和 git。
 
-在 Claude Code 裡打這兩行（terminal 或 VSCode 擴充套件都可以）：
+在終端機裡打這兩行：
 
-```
-/plugin marketplace add nvlznn/kenmap
-/plugin install kenmap@noky
+```bash
+claude plugin marketplace add nvlznn/kenmap
+claude plugin install kenmap@noky
 ```
 
 第一行把 KenMap 的 marketplace（名字叫 `noky`）加進你的 Claude Code，第二行從裡面安裝 `kenmap` 這個 plugin。不需要 clone 任何東西。
+
+已經在 Claude Code 對話裡（terminal 或 VSCode 擴充套件）的話，改打 `/plugin marketplace add nvlznn/kenmap` 和 `/plugin install kenmap@noky`。注意 `/plugin` 開頭的指令只能在 Claude Code 裡打，直接貼進 zsh 會出現 `no such file or directory: /plugin`。
 
 裝好之後打 `/kenmap:comprehend help`，會用一張表列出所有指令。指令前面的 `kenmap:` 是 plugin 的名字，Claude Code 規定 plugin 裡的指令都要帶這個前綴。
 
@@ -39,7 +41,7 @@ KenMap 是一個 Claude Code plugin，不是獨立 app。需要 Node.js 20 以�
 
 第三方 marketplace 預設不會自動更新，擇一：
 
-- **手動**：`/plugin marketplace update noky`
+- **手動**：終端機裡打 `claude plugin update kenmap@noky`，或在 Claude Code 裡打 `/plugin marketplace update noky`
 - **自動**：打 `/plugin` → Marketplaces → noky → Enable auto-update
 
 更新完開一個新對話就會用新版。
